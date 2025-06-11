@@ -34,7 +34,12 @@ class cpu{
         bool getFlag(char flag);
         void setFlag(char flag);
         void clearFlag(char flag);
-        
+        void fetchOpcode();
+        uint8_t fetchNextByte();
+        uint16_t fetchNext2Bytes();
+        void execute();
+        void executePrefixed();
+        void executeOpcode();
         // hardware functions
         void step();
         

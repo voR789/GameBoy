@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <GL/glut.h>
 #include "cpu.h"
 #include "mmu.h"
@@ -73,22 +74,2325 @@ uint16_t cpu::fetchNext2Bytes(){
 
 void cpu::execute(){
     // switch based off of default table
-    case():{
-        switch (expression)
-        {
-        case constant expression:
-            /* code */
-            break;
+    uint8_t firstNibble = (opcode & 0xF0) >> 4;
+    uint8_t secondNibble = opcode & 0x0F;
+    switch(firstNibble){
+        case(0x0):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
         
-        default:
-            break;
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
         }
+
+        case(0x1):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x2):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x3):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x4):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x5):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x6):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x7):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x8):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x9):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xA):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+        
+        case(0xB):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xC):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xD):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xE):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xF):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+        
+        default: throw std::runtime_error("Invalid Opcode!"); break;
     }
 }
 
 void cpu::executePrefixed(){
     fetchOpcode();
     // switch based off of prefix table
+    uint8_t firstNibble = (opcode & 0xF0) >> 4;
+    uint8_t secondNibble = opcode & 0x0F;
+    switch(firstNibble){
+        case(0x0):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x1):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x2):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x3):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x4):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x5):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x6):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x7):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x8):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0x9):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xA):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+        
+        case(0xB):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xC):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xD):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xE):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+
+        case(0xF):{
+            switch (secondNibble)
+            {
+            case(0x0):
+                /*TODO:*/
+                break;
+            
+            case(0x1):
+                /*TODO:*/
+                break;
+            
+            case(0x2):
+                /*TODO:*/
+                break;
+            
+            case(0x3):
+                /*TODO:*/
+                break;
+            
+            case(0x4):
+                /*TODO:*/
+                break;
+        
+            case(0x5):
+                /*TODO:*/
+                break;
+            
+            case(0x6):
+                /*TODO:*/
+                break;
+            
+            case(0x7):
+                /*TODO:*/
+                break;
+            
+            case(0x8):
+                /*TODO:*/
+                break;
+            
+            case(0x9):
+                /*TODO:*/
+                break;
+            
+            case(0xA):
+                /*TODO:*/
+                break;
+            
+            case(0xB):
+                /*TODO:*/
+                break;
+            
+            case(0xC):
+                /*TODO:*/
+                break;
+            
+            case(0xD):
+                /*TODO:*/
+                break;
+            
+            case(0xE):
+                /*TODO:*/
+                break;
+                
+            case(0xF):
+                /*TODO:*/
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid Opcode!"); break;
+            }
+        }
+        
+        default: throw std::runtime_error("Invalid Opcode!"); break;
+    }
 }
 
 void cpu::executeOpcode(){
