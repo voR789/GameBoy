@@ -2,14 +2,14 @@
 #define CPU_H
 #include <cstdint>
 #include <string>
-#include "cpu.h"
+#include "mmu.h"
 #include "ppu.h"
 #include "timer.h"
 
-#define Z_FLAG 0x80 // bit 7 of F 1000 0000
-#define N_FLAG 0x40 // bit 6 of F 0100 0000
-#define H_FLAG 0x20 // bit 5 of F 0010 0000
-#define C_FLAG 0x10 // bit 4 of F 0001 0000
+#define Z_FLAG 0x80 // bit 7 of F 1000 0000 - Zero flag
+#define N_FLAG 0x40 // bit 6 of F 0100 0000 - Subtract flag
+#define H_FLAG 0x20 // bit 5 of F 0010 0000 - Half carry flag, overflow in lower nibble
+#define C_FLAG 0x10 // bit 4 of F 0001 0000 - Full carry flag, overflow in higher nibble
 
 class cpu{
     private:
@@ -23,25 +23,30 @@ class cpu{
         uint16_t sp;
         uint16_t pc; 
         uint16_t opcode;
+        int cycles;
         // TODO: implement timers interrupts, controls, and gfx later
         
     public:
         // constructor
-        cpu(mmu& MMU, ppu& PPU, timer& TIMER); // TODO: 
+        cpu(mmu& MMUref, ppu& PPUref, timer& TIMERref); // TODO: 
         // helper functions
         uint8_t getUpper(uint16_t data);
         uint8_t getLower(uint16_t data);
+        void clearAllFlags();
         bool getFlag(char flag);
         void setFlag(char flag);
         void clearFlag(char flag);
         void fetchOpcode();
         uint8_t fetchNextByte();
         uint16_t fetchNext2Bytes();
-        void execute();
-        void executePrefixed();
-        void executeOpcode();
+        void inc8(uint8_t byte);
+        void dec8(uint8_t byte);
+
         // hardware functions
-        void step();
+        int step();
+        int execute();
+        int executePrefixed();
+        int executeOpcode();
         
 };
 
