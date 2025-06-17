@@ -41,6 +41,7 @@ class cpu{
         uint16_t fetchNext2Bytes();
         void inc8(uint8_t byte);
         void dec8(uint8_t byte);
+        void add16(uint16_t byte1, uint16_t byte2);
 
         // hardware functions
         int step();

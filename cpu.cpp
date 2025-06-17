@@ -95,8 +95,24 @@ void cpu::dec8(uint8_t byte){
     if((uint8_t)(byte-1) == 0) {setFlag('Z');} else {clearFlag('Z');}
     setFlag('N');
 }
+/* no flags set when inc/dec 16 bit
+void cpu::inc16(uint16_t bytes){
+    
+}
+
+
+void cpu::dec16(uint16_t bytes){
+    
+}*/
+
+void cpu::add16(uint16_t byte1, uint16_t byte2){
+    clearFlag('N');
+    if((byte1 & 0x0FFF) + (byte2 & 0x0FFF) > 0x0FFF){setFlag('H');} else {clearFlag('H');}
+    if((byte1 + byte2) > 0xFFFF){setFlag('C');} else {clearFlag('C');}
+}
 
 // TODO: More helper funcs
+
 
 int cpu::execute(){
     // switch based off of default table
@@ -187,9 +203,7 @@ int cpu::execute(){
                 registers[3] = BC + HL;
 
                 // set flags
-                clearFlag('N');
-                if((BC & 0x0FFF) + (HL & 0x0FFF) > 0x0FFF){setFlag('H');} else {clearFlag('H');}
-                if((BC + HL) > 0xFFFF){setFlag('C');} else {clearFlag('C');}
+                add16(BC,HL);
 
                 return 2;
                 break;
@@ -223,15 +237,36 @@ int cpu::execute(){
                 break;
             
             case(0xD):
-                /*TODO:*/
+                uint8_t B = getUpper(registers[1]);
+                uint8_t C = getLower(registers[1]);
+
+                // flag check
+                dec8(C);
+                C--;
+
+                registers[1] = (B << 8) | C;
+
+                return 1;
                 break;
             
             case(0xE):
-                /*TODO:*/
+                uint8_t B = getUpper(registers[1]);
+                uint8_t C = getLower(registers[1]);
+                C = fetchNextByte();
+
+                registers[1] = (B << 8) | C;
+                return 2;
                 break;
-                
+        
             case(0xF):
-                /*TODO:*/
+                uint8_t A = getUpper(registers[0]);
+                uint8_t F = getLower(registers[0]);
+                bool rightMost = A & 0x1;
+                if(rightMost){setFlag('C');} else {clearFlag('C');}
+                A = (A >> 1) | (rightMost << 7);
+                registers[0] = (A << 8) | F;
+
+                return 1;
                 break;
             
             default:
@@ -243,67 +278,141 @@ int cpu::execute(){
             switch (secondNibble)
             {
             case(0x0):
-                /*TODO:*/
+                /*TODO: do after figuring out interrupt flags*/ 
                 break;
             
             case(0x1):
-                /*TODO:*/
+                registers[2] = fetchNext2Bytes();
+                return 3;
                 break;
             
             case(0x2):
-                /*TODO:*/
+                MMU.writeMem(getUpper(registers[0]), registers[2]);
+                return 2;
                 break;
             
             case(0x3):
-                /*TODO:*/
+                registers[2]++;
+                // no flag checks for 16 bit inc/dec
+                return 2;
                 break;
             
             case(0x4):
-                /*TODO:*/
+                uint8_t D = getUpper(registers[2]);
+                uint8_t E = getLower(registers[2]);
+
+                // flag check
+                inc8(D);
+                D++;
+
+                registers[2] = (D << 8) | E;
+                return 1;
                 break;
         
             case(0x5):
-                /*TODO:*/
+                uint8_t D = getUpper(registers[2]);
+                uint8_t E = getLower(registers[2]);
+
+                // flag check
+                dec8(D);
+                D--;
+
+                registers[2] = (D << 8) | E;
+                return 1;
                 break;
             
             case(0x6):
-                /*TODO:*/
+                uint8_t D = getUpper(registers[1]);
+                uint8_t E = getLower(registers[1]);
+                D = fetchNextByte();
+
+                registers[2] = (D << 8) | E;
+                return 2;
                 break;
             
             case(0x7):
-                /*TODO:*/
+                uint8_t A = getUpper(registers[0]);
+                uint8_t F = getLower(registers[0]);
+                bool leftMost = A >> 7;
+                A = (A << 1) | (getFlag('C'));
+                if(leftMost) {setFlag('C');} else {clearFlag('C');}
+                return 1;
                 break;
             
             case(0x8):
-                /*TODO:*/
+                uint8_t data = fetchNextByte();
+                pc += data;
+                return 3;
                 break;
             
             case(0x9):
-                /*TODO:*/
+                uint16_t DE = registers[2];
+                uint16_t HL = registers[3];
+                registers[3] = DE + HL;
+
+                // set flags
+                add16(DE,HL);
+
+                return 2;
                 break;
             
             case(0xA):
-                /*TODO:*/
+                uint16_t DE = registers[2];
+                uint8_t data = MMU.readMem(DE);
+                uint8_t F = getLower(registers[0]);
+                registers[0] = (data << 8) | F;
+
+                return 2;
                 break;
             
             case(0xB):
-                /*TODO:*/
+                registers[2]--;
+
+                return 2;
                 break;
             
             case(0xC):
-                /*TODO:*/
+                uint8_t D = getUpper(registers[2]);
+                uint8_t E = getLower(registers[2]);
+
+                // flag check
+                inc8(E);
+                E++;
+
+                registers[1] = (D << 8) | E;
+                
+                return 1;
                 break;
             
             case(0xD):
-                /*TODO:*/
+                uint8_t D = getUpper(registers[2]);
+                uint8_t E = getLower(registers[2]);
+
+                // flag check
+                dec8(E);
+                E--;
+
+                registers[1] = (D << 8) | E;
+                
+                return 1;
                 break;
             
             case(0xE):
-                /*TODO:*/
+                uint8_t D = getUpper(registers[2]);
+                uint8_t E = getLower(registers[2]);
+                E = fetchNextByte();
+
+                registers[1] = (D << 8) | E;
+                return 2;
                 break;
                 
             case(0xF):
-                /*TODO:*/
+                uint8_t A = getUpper(registers[0]);
+                uint8_t F = getLower(registers[0]);
+                bool rightMost = A & 0x1;
+                if(rightMost){setFlag('C');} else {clearFlag('C');}
+                A = (A >> 1) | (getFlag('C') << 7);
+                return 1;
                 break;
             
             default:
@@ -2504,6 +2613,6 @@ cpu::cpu(mmu& MMUref, ppu& PPUref, timer& TIMERref): MMU(MMUref), PPU(PPUref), T
 
 // Game loop
 int cpu::step(){
+    fetchOpcode();
     // return cycles to help sync with ppu and timer
-    fetchOpcode();  
 }
