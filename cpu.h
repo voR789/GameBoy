@@ -39,10 +39,16 @@ class cpu{
         void fetchOpcode();
         uint8_t fetchNextByte();
         uint16_t fetchNext2Bytes();
-        void inc8(uint8_t byte);
-        void dec8(uint8_t byte);
-        void add16(uint16_t byte1, uint16_t byte2);
-
+        void inc8(char reg);
+        void dec8(char reg);
+        void addA(uint8_t byte);
+        void acdA(uint8_t byte);
+        void subA(uint8_t byte);
+        void sbcA(uint8_t byte);
+        
+        uint16_t add16(uint16_t byte1, uint16_t byte2);
+        void ldMem8(int address, uint8_t byte);
+        void ldReg8(char reg, uint8_t byte);
         // hardware functions
         int step();
         int execute();
