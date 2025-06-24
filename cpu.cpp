@@ -112,7 +112,6 @@ uint16_t cpu::fetchNext2Bytes()
     return (MMU.readMem(pc++) | (MMU.readMem(pc++) << 8));
 }
 
-// TODO: rewrite inc8 and dec8 to be all encompassing
 void cpu::inc8(char reg)
 {
     uint8_t byte;
@@ -369,20 +368,6 @@ void cpu::dec8(char reg)
     }
     clearFlag('N');
 }
-/* no flags set when inc/dec 16 bit
-void cpu::inc16(uint16_t bytes){
-
-}
-
-
-void cpu::dec16(uint16_t bytes){
-
-}*/
-// TODO: Accumulator arithmetic functions and bitwise
-void cpu::addA(uint8_t byte){};
-void cpu::acdA(uint8_t byte){};
-void cpu::subA(uint8_t byte){};
-void cpu::sbcA(uint8_t byte){};
 
 uint16_t cpu::add16(uint16_t byte1, uint16_t byte2)
 {
@@ -403,7 +388,269 @@ uint16_t cpu::add16(uint16_t byte1, uint16_t byte2)
     {
         clearFlag('C');
     }
-    return byte1+byte2;
+    return byte1 + byte2;
+}
+
+void cpu::addA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+
+    // Z, N, H, and Cy flags
+    if ((uint8_t)(A + byte) == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+
+    clearFlag('N');
+
+    if ((A & 0xF) + (byte & 0xF) > 0xF)
+    {
+        setFlag('H');
+    }
+    else
+    {
+        clearFlag('H');
+    }
+
+    if (A + byte > 0xFF)
+    {
+        setFlag('C');
+    }
+    else
+    {
+        clearFlag('C');
+    }
+
+    A += byte;
+    registers[0] = (A << 8) | F;
+}
+void cpu::adcA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+    bool Cy = getFlag('C');
+    // Z, N, H, and Cy flags
+    if ((uint8_t)(A + byte + Cy) == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+
+    clearFlag('N');
+
+    if ((A & 0xF) + (byte & 0xF) + Cy > 0xF)
+    {
+        setFlag('H');
+    }
+    else
+    {
+        clearFlag('H');
+    }
+
+    if (A + byte + Cy > 0xFF)
+    {
+        setFlag('C');
+    }
+    else
+    {
+        clearFlag('C');
+    }
+
+    A += (byte + Cy);
+    registers[0] = (A << 8) | F;
+}
+void cpu::subA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+
+    // Z, N, H, and Cy flags
+    if ((uint8_t)(A - byte) == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+
+    setFlag('N');
+
+    if ((A & 0xF) < (byte & 0xF))
+    {
+        setFlag('H');
+    }
+    else
+    {
+        clearFlag('H');
+    }
+
+    if (A < byte)
+    {
+        setFlag('C');
+    }
+    else
+    {
+        clearFlag('C');
+    }
+
+    A -= byte;
+    registers[0] = (A << 8) | F;
+}
+void cpu::sbcA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+    bool Cy = getFlag('C');
+    // Z, N, H, and Cy flags
+    if ((uint8_t)(A - (byte + Cy) == 0))
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+
+    setFlag('N');
+
+    if ((A & 0xF) < ((byte & 0xF) + Cy))
+    {
+        setFlag('H');
+    }
+    else
+    {
+        clearFlag('H');
+    }
+
+    if (A < (byte + Cy))
+    {
+        setFlag('C');
+    }
+    else
+    {
+        clearFlag('C');
+    }
+
+    A -= (byte + Cy);
+    registers[0] = (A << 8) | F;
+}
+
+void cpu::andA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+    A &= byte;
+    if (A == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+    clearFlag('N');
+    setFlag('H');
+    clearFlag('C');
+    registers[0] = (A << 8) | F;
+}
+void cpu::xorA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+    A ^= byte;
+    if (A == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+    clearFlag('N');
+    clearFlag('H');
+    clearFlag('C');
+    registers[0] = (A << 8) | F;
+}
+void cpu::orA(uint8_t byte)
+{
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+    A |= byte;
+    if (A == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+    clearFlag('N');
+    clearFlag('H');
+    clearFlag('C');
+    registers[0] = (A << 8) | F;
+}
+void cpu::cpA(uint8_t byte)
+{ // basically subA, but just to set flags
+    uint8_t A = getUpper(registers[0]);
+    uint8_t F = getLower(registers[0]);
+
+    // Z, N, H, and Cy flags
+    if ((uint8_t)(A - byte) == 0)
+    {
+        setFlag('Z');
+    }
+    else
+    {
+        clearFlag('Z');
+    }
+
+    setFlag('N');
+
+    if ((A & 0xF) < (byte & 0xF))
+    {
+        setFlag('H');
+    }
+    else
+    {
+        clearFlag('H');
+    }
+
+    if (A < byte)
+    {
+        setFlag('C');
+    }
+    else
+    {
+        clearFlag('C');
+    }
+}
+
+uint8_t cpu::popStack()
+{
+    return MMU.readMem(sp++);
+    // the stack in the gb memory map is reverse mapped, starting at n, and decreasing to 0, so ++ is "popping" in this
+}
+
+void cpu::pushStack(uint8_t byte)
+{
+    MMU.writeMem(byte, --sp);
+}
+
+void cpu::storePC()
+{
+    uint8_t upper = ((pc & 0xFF00) >> 8);
+    uint8_t lower = (pc & 0xFF);
+    pushStack(upper);
+    pushStack(lower);
 }
 
 void cpu::ldMem8(int address, uint8_t byte)
@@ -708,7 +955,7 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            if (getFlag('Z') == 0)
+            if (!getFlag('Z'))
             {
                 pc += fetchNextByte();
                 return 3;
@@ -831,7 +1078,7 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            if (getFlag('C') == 0)
+            if (!getFlag('C'))
             {
                 pc += fetchNextByte();
                 return 3;
@@ -849,7 +1096,7 @@ int cpu::execute()
         case (0x2):
             uint8_t A = getUpper(registers[0]);
             uint16_t HL = registers[3];
-            ldMem8(HL--,A);
+            ldMem8(HL--, A);
             registers[3] = HL;
             return 2;
 
@@ -872,24 +1119,27 @@ int cpu::execute()
             setFlag('C');
 
         case (0x8):
-            if(getFlag('C')){
+            if (getFlag('C'))
+            {
                 pc += fetchNextByte();
                 return 3;
-            } else{
+            }
+            else
+            {
                 fetchNextByte();
                 return 2;
             }
 
         case (0x9):
             uint16_t HL = registers[3];
-            registers[3] = add16(HL,sp);
+            registers[3] = add16(HL, sp);
             return 2;
 
         case (0xA):
             uint8_t A = getUpper(registers[0]);
             uint16_t HL = registers[3];
-            ldMem8(HL--,A);
-            registers[3] = HL;            
+            ldMem8(HL--, A);
+            registers[3] = HL;
             return 2;
 
         case (0xB):
@@ -905,11 +1155,18 @@ int cpu::execute()
             return 1;
 
         case (0xE):
-            ldReg8('A',fetchNextByte());
+            ldReg8('A', fetchNextByte());
             return 2;
 
         case (0xF):
-            if(getFlag('C')) {clearFlag('C');} else {setFlag('C');}
+            if (getFlag('C'))
+            {
+                clearFlag('C');
+            }
+            else
+            {
+                setFlag('C');
+            }
             return 1;
 
         default:
@@ -923,31 +1180,31 @@ int cpu::execute()
         {
         case (0x0):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('B',B);
+            ldReg8('B', B);
             return 1;
         case (0x1):
             uint8_t C = getLower(registers[1]);
-            ldReg8('B',C);
+            ldReg8('B', C);
             return 1;
         case (0x2):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('B',D);
-            return 1;            
+            ldReg8('B', D);
+            return 1;
         case (0x3):
             uint8_t E = getLower(registers[2]);
-            ldReg8('B',E);
+            ldReg8('B', E);
             return 1;
         case (0x4):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('B',H);
+            ldReg8('B', H);
             return 1;
         case (0x5):
             uint8_t L = getLower(registers[3]);
-            ldReg8('B',L);
+            ldReg8('B', L);
             return 1;
         case (0x6):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('B',HL_data);
+            ldReg8('B', HL_data);
             return 2;
         case (0x7):
             uint8_t A = getUpper(registers[0]);
@@ -955,31 +1212,31 @@ int cpu::execute()
             return 1;
         case (0x8):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('C',B);
+            ldReg8('C', B);
             return 1;
         case (0x9):
             uint8_t C = getLower(registers[1]);
-            ldReg8('C',C);
+            ldReg8('C', C);
             return 1;
         case (0xA):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('C',D);
+            ldReg8('C', D);
             return 1;
         case (0xB):
             uint8_t E = getLower(registers[2]);
-            ldReg8('C',E);
+            ldReg8('C', E);
             return 1;
         case (0xC):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('C',H);
+            ldReg8('C', H);
             return 1;
         case (0xD):
             uint8_t L = getLower(registers[3]);
-            ldReg8('C',L);
+            ldReg8('C', L);
             return 1;
         case (0xE):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('C',HL_data);
+            ldReg8('C', HL_data);
             return 2;
         case (0xF):
             uint8_t A = getUpper(registers[0]);
@@ -997,31 +1254,31 @@ int cpu::execute()
         {
         case (0x0):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('D',B);
+            ldReg8('D', B);
             return 1;
         case (0x1):
             uint8_t C = getLower(registers[1]);
-            ldReg8('D',C);
+            ldReg8('D', C);
             return 1;
         case (0x2):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('D',D);
-            return 1;            
+            ldReg8('D', D);
+            return 1;
         case (0x3):
             uint8_t E = getLower(registers[2]);
-            ldReg8('D',E);
+            ldReg8('D', E);
             return 1;
         case (0x4):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('D',H);
+            ldReg8('D', H);
             return 1;
         case (0x5):
             uint8_t L = getLower(registers[3]);
-            ldReg8('D',L);
+            ldReg8('D', L);
             return 1;
         case (0x6):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('D',HL_data);
+            ldReg8('D', HL_data);
             return 2;
         case (0x7):
             uint8_t A = getUpper(registers[0]);
@@ -1029,31 +1286,31 @@ int cpu::execute()
             return 1;
         case (0x8):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('E',B);
+            ldReg8('E', B);
             return 1;
         case (0x9):
             uint8_t C = getLower(registers[1]);
-            ldReg8('E',C);
+            ldReg8('E', C);
             return 1;
         case (0xA):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('E',D);
+            ldReg8('E', D);
             return 1;
         case (0xB):
             uint8_t E = getLower(registers[2]);
-            ldReg8('E',E);
+            ldReg8('E', E);
             return 1;
         case (0xC):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('E',H);
+            ldReg8('E', H);
             return 1;
         case (0xD):
             uint8_t L = getLower(registers[3]);
-            ldReg8('E',L);
+            ldReg8('E', L);
             return 1;
         case (0xE):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('E',HL_data);
+            ldReg8('E', HL_data);
             return 2;
         case (0xF):
             uint8_t A = getUpper(registers[0]);
@@ -1071,31 +1328,31 @@ int cpu::execute()
         {
         case (0x0):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('H',B);
+            ldReg8('H', B);
             return 1;
         case (0x1):
             uint8_t C = getLower(registers[1]);
-            ldReg8('H',C);
+            ldReg8('H', C);
             return 1;
         case (0x2):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('H',D);
-            return 1;            
+            ldReg8('H', D);
+            return 1;
         case (0x3):
             uint8_t E = getLower(registers[2]);
-            ldReg8('H',E);
+            ldReg8('H', E);
             return 1;
         case (0x4):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('H',H);
+            ldReg8('H', H);
             return 1;
         case (0x5):
             uint8_t L = getLower(registers[3]);
-            ldReg8('H',L);
+            ldReg8('H', L);
             return 1;
         case (0x6):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('H',HL_data);
+            ldReg8('H', HL_data);
             return 2;
         case (0x7):
             uint8_t A = getUpper(registers[0]);
@@ -1103,31 +1360,31 @@ int cpu::execute()
             return 1;
         case (0x8):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('L',B);
+            ldReg8('L', B);
             return 1;
         case (0x9):
             uint8_t C = getLower(registers[1]);
-            ldReg8('L',C);
+            ldReg8('L', C);
             return 1;
         case (0xA):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('L',D);
+            ldReg8('L', D);
             return 1;
         case (0xB):
             uint8_t E = getLower(registers[2]);
-            ldReg8('L',E);
+            ldReg8('L', E);
             return 1;
         case (0xC):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('L',H);
+            ldReg8('L', H);
             return 1;
         case (0xD):
             uint8_t L = getLower(registers[3]);
-            ldReg8('L',L);
+            ldReg8('L', L);
             return 1;
         case (0xE):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('L',HL_data);
+            ldReg8('L', HL_data);
             return 2;
         case (0xF):
             uint8_t A = getUpper(registers[0]);
@@ -1146,32 +1403,32 @@ int cpu::execute()
         case (0x0):
             uint16_t HL = registers[3];
             uint8_t B = getUpper(registers[1]);
-            ldMem8(HL,B);
+            ldMem8(HL, B);
             return 2;
         case (0x1):
             uint16_t HL = registers[3];
             uint8_t C = getLower(registers[1]);
-            ldMem8(HL,C);
+            ldMem8(HL, C);
             return 2;
         case (0x2):
             uint16_t HL = registers[3];
             uint8_t D = getUpper(registers[2]);
-            ldMem8(HL,D);
+            ldMem8(HL, D);
             return 2;
         case (0x3):
             uint16_t HL = registers[3];
             uint8_t E = getLower(registers[2]);
-            ldMem8(HL,E);
+            ldMem8(HL, E);
             return 2;
         case (0x4):
             uint16_t HL = registers[3];
             uint8_t H = getUpper(registers[3]);
-            ldMem8(HL,H);
+            ldMem8(HL, H);
             return 2;
         case (0x5):
             uint16_t HL = registers[3];
             uint8_t L = getLower(registers[3]);
-            ldMem8(HL,L);
+            ldMem8(HL, L);
             return 2;
         case (0x6):
             /*TODO: HALT*/
@@ -1179,35 +1436,35 @@ int cpu::execute()
         case (0x7):
             uint16_t HL = registers[3];
             uint8_t A = getUpper(registers[0]);
-            ldMem8(HL,A);
+            ldMem8(HL, A);
             return 2;
         case (0x8):
             uint8_t B = getUpper(registers[1]);
-            ldReg8('A',B);
+            ldReg8('A', B);
             return 1;
         case (0x9):
             uint8_t C = getLower(registers[1]);
-            ldReg8('A',C);
+            ldReg8('A', C);
             return 1;
         case (0xA):
             uint8_t D = getUpper(registers[2]);
-            ldReg8('A',D);
+            ldReg8('A', D);
             return 1;
         case (0xB):
             uint8_t E = getLower(registers[2]);
-            ldReg8('A',E);
+            ldReg8('A', E);
             return 1;
         case (0xC):
             uint8_t H = getUpper(registers[3]);
-            ldReg8('A',H);
+            ldReg8('A', H);
             return 1;
         case (0xD):
             uint8_t L = getLower(registers[3]);
-            ldReg8('A',L);
+            ldReg8('A', L);
             return 1;
         case (0xE):
             uint8_t HL_data = MMU.readMem(registers[3]);
-            ldReg8('A',HL_data);
+            ldReg8('A', HL_data);
             return 2;
         case (0xF):
             uint8_t A = getUpper(registers[0]);
@@ -1224,52 +1481,84 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            addA(B);
+            return 1;
 
         case (0x1):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            addA(C);
+            return 1;
 
         case (0x2):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            addA(D);
+            return 1;
 
         case (0x3):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            addA(E);
+            return 1;
 
         case (0x4):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            addA(H);
+            return 1;
 
         case (0x5):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            addA(L);
+            return 1;
 
         case (0x6):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            addA(HL_data);
+            return 2;
 
         case (0x7):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            addA(A);
+            return 1;
 
         case (0x8):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            adcA(B);
+            return 1;
 
         case (0x9):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            adcA(C);
+            return 1;
 
         case (0xA):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            adcA(D);
+            return 1;
 
         case (0xB):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            adcA(E);
+            return 1;
 
         case (0xC):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            adcA(H);
+            return 1;
 
         case (0xD):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            adcA(L);
+            return 1;
 
         case (0xE):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            adcA(HL_data);
+            return 2;
 
         case (0xF):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            adcA(A);
+            return 1;
 
         default:
             throw std::runtime_error("Invalid Opcode!");
@@ -1281,52 +1570,84 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            subA(B);
+            return 1;
 
         case (0x1):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            subA(C);
+            return 1;
 
         case (0x2):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            subA(D);
+            return 1;
 
         case (0x3):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            subA(E);
+            return 1;
 
         case (0x4):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            subA(H);
+            return 1;
 
         case (0x5):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            subA(L);
+            return 1;
 
         case (0x6):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            subA(HL_data);
+            return 2;
 
         case (0x7):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            subA(A);
+            return 1;
 
         case (0x8):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            sbcA(B);
+            return 1;
 
         case (0x9):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            sbcA(C);
+            return 1;
 
         case (0xA):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            sbcA(D);
+            return 1;
 
         case (0xB):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            sbcA(E);
+            return 1;
 
         case (0xC):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            sbcA(H);
+            return 1;
 
         case (0xD):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            sbcA(L);
+            return 1;
 
         case (0xE):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            sbcA(HL_data);
+            return 2;
 
         case (0xF):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            sbcA(A);
+            return 1;
 
         default:
             throw std::runtime_error("Invalid Opcode!");
@@ -1338,52 +1659,84 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            andA(B);
+            return 1;
 
         case (0x1):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            andA(C);
+            return 1;
 
         case (0x2):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            andA(D);
+            return 1;
 
         case (0x3):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            andA(E);
+            return 1;
 
         case (0x4):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            andA(H);
+            return 1;
 
         case (0x5):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            andA(L);
+            return 1;
 
         case (0x6):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            andA(HL_data);
+            return 2;
 
         case (0x7):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            andA(A);
+            return 1;
 
         case (0x8):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            xorA(B);
+            return 1;
 
         case (0x9):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            xorA(C);
+            return 1;
 
         case (0xA):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            xorA(D);
+            return 1;
 
         case (0xB):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            xorA(E);
+            return 1;
 
         case (0xC):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            xorA(H);
+            return 1;
 
         case (0xD):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            xorA(L);
+            return 1;
 
         case (0xE):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            xorA(HL_data);
+            return 2;
 
         case (0xF):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            xorA(A);
+            return 1;
 
         default:
             throw std::runtime_error("Invalid Opcode!");
@@ -1395,52 +1748,84 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            orA(B);
+            return 1;
 
         case (0x1):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            orA(C);
+            return 1;
 
         case (0x2):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            orA(D);
+            return 1;
 
         case (0x3):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            orA(E);
+            return 1;
 
         case (0x4):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            orA(H);
+            return 1;
 
         case (0x5):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            orA(L);
+            return 1;
 
         case (0x6):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            orA(HL_data);
+            return 2;
 
         case (0x7):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            orA(A);
+            return 1;
 
         case (0x8):
-            /*TODO:*/
+            uint8_t B = getUpper(registers[1]);
+            cpA(B);
+            return 1;
 
         case (0x9):
-            /*TODO:*/
+            uint8_t C = getLower(registers[1]);
+            cpA(C);
+            return 1;
 
         case (0xA):
-            /*TODO:*/
+            uint8_t D = getUpper(registers[2]);
+            cpA(D);
+            return 1;
 
         case (0xB):
-            /*TODO:*/
+            uint8_t E = getLower(registers[2]);
+            cpA(E);
+            return 1;
 
         case (0xC):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            cpA(H);
+            return 1;
 
         case (0xD):
-            /*TODO:*/
+            uint8_t L = getLower(registers[3]);
+            cpA(L);
+            return 1;
 
         case (0xE):
-            /*TODO:*/
+            uint8_t HL_data = MMU.readMem(registers[3]);
+            cpA(HL_data);
+            return 2;
 
         case (0xF):
-            /*TODO:*/
+            uint8_t A = getUpper(registers[0]);
+            cpA(A);
+            return 1;
 
         default:
             throw std::runtime_error("Invalid Opcode!");
@@ -1452,53 +1837,110 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
-
+            if (!getFlag('Z'))
+            {
+                pc = (popStack()) | (popStack() << 8);
+                return 5;
+            }
+            else
+            {
+                return 2;
+            }
         case (0x1):
-            /*TODO:*/
+            uint8_t C = popStack();
+            uint8_t B = popStack();
 
+            registers[1] = (B << 8) | C;
+            return 3;
         case (0x2):
-            /*TODO:*/
-
+            if (!getFlag('Z'))
+            {
+                pc = fetchNext2Bytes();
+                return 4;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0x3):
-            /*TODO:*/
-
+            pc = fetchNext2Bytes();
+            return 4;
         case (0x4):
-            /*TODO:*/
-
+            if (!getFlag('Z'))
+            {
+                storePC();
+                pc = fetchNext2Bytes();
+                return 6;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0x5):
-            /*TODO:*/
-
+            uint8_t B = getUpper(registers[1]);
+            uint8_t C = getLower(registers[1]);
+            pushStack(B);
+            pushStack(C);
+            return 4;
         case (0x6):
-            /*TODO:*/
-
+            addA(fetchNextByte());
+            return 2;
         case (0x7):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x00;
+            return 4;
         case (0x8):
-            /*TODO:*/
-
+            if (getFlag('Z'))
+            {
+                pc = popStack() | (popStack() << 8);
+                return 5;
+            }
+            else
+            {
+                return 2;
+            }
         case (0x9):
-            /*TODO:*/
-
+            pc = popStack() | (popStack() << 8);
+            return 4;
         case (0xA):
-            /*TODO:*/
-
+            if (getFlag('Z'))
+            {
+                pc = fetchNext2Bytes();
+                return 4;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0xB):
-            /*TODO:*/
+            return 0; /// nan
 
         case (0xC):
-            /*TODO:*/
-
+            if (getFlag('Z'))
+            {
+                storePC();
+                pc = fetchNext2Bytes();
+                return 6;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0xD):
-            /*TODO:*/
-
+            storePC();
+            pc = fetchNext2Bytes();
+            return 6;
         case (0xE):
-            /*TODO:*/
-
+            adcA(fetchNextByte());
+            return 2;
         case (0xF):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x08;
+            return 4;
         default:
             throw std::runtime_error("Invalid Opcode!");
         }
@@ -1509,53 +1951,107 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
+            if (!getFlag('C'))
+            {
+                pc = (popStack()) | (popStack() << 8);
+                return 5;
+            }
+            else
+            {
+                return 2;
+            }
 
         case (0x1):
-            /*TODO:*/
+            uint8_t D = popStack();
+            uint8_t E = popStack();
+            registers[2] = (D >> 8) | E;
 
         case (0x2):
-            /*TODO:*/
-
+            if (!getFlag('C'))
+            {
+                pc = fetchNext2Bytes();
+                return 4;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0x3):
-            /*TODO:*/
-
+            return 0; // nan
         case (0x4):
-            /*TODO:*/
-
+            if (!getFlag('C'))
+            {
+                storePC();
+                pc = fetchNext2Bytes();
+                return 6;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0x5):
-            /*TODO:*/
-
+            uint8_t D = getUpper(registers[2]);
+            uint8_t E = getLower(registers[2]);
+            pushStack(D);
+            pushStack(E);
+            return 4;
         case (0x6):
-            /*TODO:*/
-
+            subA(fetchNextByte());
+            return 2;
         case (0x7):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x10;
+            return 4;
         case (0x8):
-            /*TODO:*/
-
+            if (getFlag('C'))
+            {
+                pc = popStack() | (popStack() << 8);
+                return 5;
+            }
+            else
+            {
+                return 2;
+            }
         case (0x9):
-            /*TODO:*/
-
+            /*TODO: reset Interrupt Flags*/
+            pc = popStack() | (popStack() << 8);
+            return 4;
         case (0xA):
-            /*TODO:*/
-
+            if (getFlag('C'))
+            {
+                pc = fetchNext2Bytes();
+                return 4;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0xB):
-            /*TODO:*/
-
+            return 0; // nan
         case (0xC):
-            /*TODO:*/
-
+            if (getFlag('C'))
+            {
+                storePC();
+                pc = fetchNext2Bytes();
+                return 6;
+            }
+            else
+            {
+                pc += 2;
+                return 3;
+            }
         case (0xD):
-            /*TODO:*/
-
+            return 0; // nan
         case (0xE):
-            /*TODO:*/
-
+            sbcA(fetchNextByte());
+            return 2;
         case (0xF):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x18;
+            return 4;
         default:
             throw std::runtime_error("Invalid Opcode!");
         }
@@ -1566,53 +2062,65 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
-
+            uint8_t A = getUpper(registers[0]);
+            uint16_t address = (0xFF00) | fetchNextByte();
+            ldMem8(address, A);
+            return 3;
         case (0x1):
-            /*TODO:*/
+            uint8_t L = popStack();
+            uint8_t H = popStack();
 
+            registers[3] = (H << 8) | L;
+            return 3;
         case (0x2):
-            /*TODO:*/
-
+            uint8_t A = getUpper(registers[0]);
+            uint8_t C = getLower(registers[1]);
+            uint16_t address = (0xFF00 | C);
+            ldMem8(address, A);
+            return 2;
         case (0x3):
-            /*TODO:*/
-
+            return 0;
         case (0x4):
-            /*TODO:*/
-
+            return 0;
         case (0x5):
-            /*TODO:*/
+            uint8_t H = getUpper(registers[3]);
+            uint8_t L = getLower(registers[3]);
 
+            pushStack(H);
+            pushStack(L);
+            return 4;
         case (0x6):
-            /*TODO:*/
-
+            andA(fetchNextByte());
+            return 2;
         case (0x7):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x20;
+            return 4;
         case (0x8):
-            /*TODO:*/
-
+            int8_t signedNext = static_cast<int8_t>(fetchNextByte()); // cast to signed byte
+            sp += signedNext;
+            return 4;
         case (0x9):
-            /*TODO:*/
-
+            pc = registers[3];
+            pc += 1;
+            return 1;
         case (0xA):
-            /*TODO:*/
-
+            uint8_t A = getUpper(registers[0]);
+            ldMem8(fetchNext2Bytes(),A);
+            return 4;
         case (0xB):
-            /*TODO:*/
-
+            return 0;
         case (0xC):
-            /*TODO:*/
-
+            return 0;
         case (0xD):
-            /*TODO:*/
-
+            return 0;
         case (0xE):
-            /*TODO:*/
-
+            xorA(fetchNextByte());
+            return 2;
         case (0xF):
-            /*TODO:*/
-
+           storePC();
+           pc = 0x28;
+           return 4; 
         default:
             throw std::runtime_error("Invalid Opcode!");
         }
@@ -1623,53 +2131,59 @@ int cpu::execute()
         switch (secondNibble)
         {
         case (0x0):
-            /*TODO:*/
-
+            uint16_t data = MMU.readMem(fetchNextByte() | (0xFF00));
+            ldReg8('A',data);   
+            return 3; 
         case (0x1):
-            /*TODO:*/
-
+            uint8_t F = popStack(); 
+            uint8_t A = popStack();
+            return 3;
         case (0x2):
-            /*TODO:*/
-
+            uint8_t C = getLower(registers[1]);
+            uint16_t address = (0xFF00 | C);
+            uint8_t data = MMU.readMem(address);
+            ldReg8('A', data);
+            return 2;
         case (0x3):
-            /*TODO:*/
-
+            /*TODO: Interrupts*/
         case (0x4):
-            /*TODO:*/
-
+            return 0;
         case (0x5):
-            /*TODO:*/
-
+            uint8_t A = getUpper(registers[0]);
+            uint8_t F = getLower(registers[0]);
+            pushStack(A);
+            pushStack(F);
+            return 4;
         case (0x6):
-            /*TODO:*/
-
+            orA(fetchNextByte());
+            return 2;
         case (0x7):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x30;
+            return 4;
         case (0x8):
-            /*TODO:*/
-
+            int8_t signedNext = static_cast<int8_t>(fetchNextByte());
+            registers[3] = sp + signedNext;
+            return 3;
         case (0x9):
-            /*TODO:*/
-
+            sp = registers[3];
+            return 2;
         case (0xA):
-            /*TODO:*/
-
-        case (0xB):
-            /*TODO:*/
-
+            ldReg8('A', MMU.readMem(fetchNext2Bytes()));
+            return 4;
+        case (0xB): 
+            /*TODO: Interrupt */
         case (0xC):
-            /*TODO:*/
-
+            return 0;
         case (0xD):
-            /*TODO:*/
-
+            return 0;
         case (0xE):
-            /*TODO:*/
-
+            cpA(fetchNextByte());
+            return 2;
         case (0xF):
-            /*TODO:*/
-
+            storePC();
+            pc = 0x38;
+            return 4;
         default:
             throw std::runtime_error("Invalid Opcode!");
         }
@@ -1694,7 +2208,6 @@ int cpu::executePrefixed()
         {
         case (0x0):
             /*TODO:*/
-
         case (0x1):
             /*TODO:*/
 

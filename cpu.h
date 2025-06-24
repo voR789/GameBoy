@@ -41,12 +41,20 @@ class cpu{
         uint16_t fetchNext2Bytes();
         void inc8(char reg);
         void dec8(char reg);
+        uint16_t add16(uint16_t byte1, uint16_t byte2);
         void addA(uint8_t byte);
-        void acdA(uint8_t byte);
+        void adcA(uint8_t byte);
         void subA(uint8_t byte);
         void sbcA(uint8_t byte);
+        void andA(uint8_t byte){}
+        void xorA(uint8_t byte){}
+        void orA(uint8_t byte){}
+        void cpA(uint8_t byte){}
+
+        uint8_t popStack(){}
+        void pushStack(uint8_t byte){}
+        void storePC(){}
         
-        uint16_t add16(uint16_t byte1, uint16_t byte2);
         void ldMem8(int address, uint8_t byte);
         void ldReg8(char reg, uint8_t byte);
         // hardware functions
