@@ -32,7 +32,6 @@ class cpu{
         // helper functions
         uint8_t getUpper(uint16_t data);
         uint8_t getLower(uint16_t data);
-        void clearAllFlags();
         bool getFlag(char flag);
         void setFlag(char flag);
         void clearFlag(char flag);

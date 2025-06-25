@@ -24,26 +24,19 @@ uint8_t cpu::getLower(uint16_t data)
     return (data & 0xFF);
 }
 
-void cpu::clearAllFlags()
-{
-    uint16_t AF = registers[0];
-    uint8_t A = getUpper(AF);
-    registers[0] = A << 8;
-}
-
 bool cpu::getFlag(char flag)
 {
-    uint8_t F = getLower(registers[4]);
+    uint8_t F = getLower(registers[0]);
     switch (flag)
     {
     case ('Z'):
-        return (F & Z_FLAG) != 0;
+        return (F & Z_FLAG);
     case ('N'):
-        return (F & Z_FLAG) != 0;
+        return (F & N_FLAG);
     case ('H'):
-        return (F & Z_FLAG) != 0;
+        return (F & H_FLAG);
     case ('C'):
-        return (F & Z_FLAG) != 0;
+        return (F & C_FLAG);
     default:
         throw std::runtime_error("getFlag(): Invalid Flag Call");
     }
@@ -51,7 +44,7 @@ bool cpu::getFlag(char flag)
 
 void cpu::setFlag(char flag)
 {
-    uint8_t F = getLower(registers[4]);
+    uint8_t F = getLower(registers[0]);
     switch (flag)
     {
     case ('Z'):
@@ -70,12 +63,12 @@ void cpu::setFlag(char flag)
         throw std::runtime_error("setFlag(): Invalid Flag Call");
     }
     // Pushing changes to F register
-    registers[4] |= F;
+    registers[0] |= F;
 }
 
 void cpu::clearFlag(char flag)
 {
-    uint8_t F = getLower(registers[4]);
+    uint8_t F = getLower(registers[0]);
     switch (flag)
     {
     case ('Z'):
@@ -94,7 +87,7 @@ void cpu::clearFlag(char flag)
         throw std::runtime_error("clearFlag(): Invalid Flag Call");
     }
     // Pushing changes to F register
-    registers[4] &= F;
+    registers[0] &= F;
 }
 
 void cpu::fetchOpcode()
@@ -109,7 +102,7 @@ uint8_t cpu::fetchNextByte()
 
 uint16_t cpu::fetchNext2Bytes()
 {
-    return (MMU.readMem(pc++) | (MMU.readMem(pc++) << 8));
+    return (MMU.readMem(pc++) | (MMU.readMem(pc++) << 8)); // little endian read
 }
 
 void cpu::inc8(char reg)
@@ -132,9 +125,9 @@ void cpu::inc8(char reg)
         }
         // dont touch carry flag
 
-        registers[0] = ((byte + 1) << 8) | F;
+        registers[0] = ((byte + 1) << 8) | F; // push to AF register
         break;
-        // no "F" - reserved for flags
+    // no "F" - reserved for flags
     case ('B'):
         byte = getUpper(registers[1]);
         uint8_t C = getLower(registers[1]);
@@ -227,7 +220,7 @@ void cpu::inc8(char reg)
         registers[3] = (H << 8) | (byte + 1);
         break;
     default:
-        throw std::runtime_error("ldReg8 Error, no case");
+        throw std::runtime_error("inc8 Error, no case");
     }
 
     if ((uint8_t)(byte + 1) == 0)
@@ -238,6 +231,7 @@ void cpu::inc8(char reg)
     {
         clearFlag('Z');
     }
+
     clearFlag('N');
 }
 
@@ -355,7 +349,7 @@ void cpu::dec8(char reg)
         registers[3] = (H << 8) | (byte - 1);
         break;
     default:
-        throw std::runtime_error("ldReg8 Error, no case");
+        throw std::runtime_error("dec8 Error, no case");
     }
 
     if ((uint8_t)(byte - 1) == 0)
@@ -371,6 +365,7 @@ void cpu::dec8(char reg)
 
 uint16_t cpu::add16(uint16_t byte1, uint16_t byte2)
 {
+    // no zero flag
     clearFlag('N');
     if ((byte1 & 0x0FFF) + (byte2 & 0x0FFF) > 0x0FFF)
     {
@@ -429,11 +424,13 @@ void cpu::addA(uint8_t byte)
     A += byte;
     registers[0] = (A << 8) | F;
 }
+
 void cpu::adcA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
     uint8_t F = getLower(registers[0]);
     bool Cy = getFlag('C');
+
     // Z, N, H, and Cy flags
     if ((uint8_t)(A + byte + Cy) == 0)
     {
@@ -446,7 +443,7 @@ void cpu::adcA(uint8_t byte)
 
     clearFlag('N');
 
-    if ((A & 0xF) + (byte & 0xF) + Cy > 0xF)
+    if (((A & 0xF) + (byte & 0xF) + Cy) > 0xF)
     {
         setFlag('H');
     }
@@ -455,7 +452,7 @@ void cpu::adcA(uint8_t byte)
         clearFlag('H');
     }
 
-    if (A + byte + Cy > 0xFF)
+    if ((A + byte + Cy) > 0xFF)
     {
         setFlag('C');
     }
@@ -467,6 +464,7 @@ void cpu::adcA(uint8_t byte)
     A += (byte + Cy);
     registers[0] = (A << 8) | F;
 }
+
 void cpu::subA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
@@ -505,11 +503,13 @@ void cpu::subA(uint8_t byte)
     A -= byte;
     registers[0] = (A << 8) | F;
 }
+
 void cpu::sbcA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
     uint8_t F = getLower(registers[0]);
     bool Cy = getFlag('C');
+
     // Z, N, H, and Cy flags
     if ((uint8_t)(A - (byte + Cy) == 0))
     {
@@ -549,6 +549,8 @@ void cpu::andA(uint8_t byte)
     uint8_t A = getUpper(registers[0]);
     uint8_t F = getLower(registers[0]);
     A &= byte;
+    
+    // Flag setting
     if (A == 0)
     {
         setFlag('Z');
@@ -560,13 +562,17 @@ void cpu::andA(uint8_t byte)
     clearFlag('N');
     setFlag('H');
     clearFlag('C');
+
     registers[0] = (A << 8) | F;
 }
+
 void cpu::xorA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
     uint8_t F = getLower(registers[0]);
     A ^= byte;
+
+    // Flag setting
     if (A == 0)
     {
         setFlag('Z');
@@ -580,6 +586,7 @@ void cpu::xorA(uint8_t byte)
     clearFlag('C');
     registers[0] = (A << 8) | F;
 }
+
 void cpu::orA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
@@ -598,6 +605,7 @@ void cpu::orA(uint8_t byte)
     clearFlag('C');
     registers[0] = (A << 8) | F;
 }
+
 void cpu::cpA(uint8_t byte)
 { // basically subA, but just to set flags
     uint8_t A = getUpper(registers[0]);
@@ -637,12 +645,13 @@ void cpu::cpA(uint8_t byte)
 uint8_t cpu::popStack()
 {
     return MMU.readMem(sp++);
-    // the stack in the gb memory map is reverse mapped, starting at n, and decreasing to 0, so ++ is "popping" in this
+    // the stack in the gb memory map is reverse mapped, starting at 0x..., and decreasing to 0x..., so ++ is "popping" in this context
 }
 
 void cpu::pushStack(uint8_t byte)
 {
     MMU.writeMem(byte, --sp);
+    // pre dec to move stack pointer to new space before writing
 }
 
 void cpu::storePC()
@@ -722,6 +731,7 @@ int cpu::execute()
     // return cycles
     uint8_t firstNibble = (opcode & 0xF0) >> 4;
     uint8_t secondNibble = opcode & 0x0F;
+
     switch (firstNibble)
     {
     case (0x0):
@@ -762,7 +772,6 @@ int cpu::execute()
 
         case (0x7):
             uint8_t A = getUpper(registers[0]);
-            uint8_t F = getLower(registers[0]);
             bool leftMost = A >> 7;
             if (leftMost)
             {
@@ -773,7 +782,7 @@ int cpu::execute()
                 clearFlag('C');
             }
             A = (A << 1) | leftMost;
-            registers[0] = (A << 8) | F;
+            ldReg8('A',A);
             return 1;
 
         case (0x8):
@@ -813,16 +822,11 @@ int cpu::execute()
             return 1;
 
         case (0xE):
-            uint8_t B = getUpper(registers[1]);
-            uint8_t C = getLower(registers[1]);
-            C = fetchNextByte();
-
-            registers[1] = (B << 8) | C;
+            ldReg8('C',fetchNextByte());
             return 2;
 
         case (0xF):
             uint8_t A = getUpper(registers[0]);
-            uint8_t F = getLower(registers[0]);
             bool rightMost = A & 0x1;
             if (rightMost)
             {
@@ -833,7 +837,7 @@ int cpu::execute()
                 clearFlag('C');
             }
             A = (A >> 1) | (rightMost << 7);
-            registers[0] = (A << 8) | F;
+            ldReg8('A',A);
 
             return 1;
 
@@ -855,7 +859,7 @@ int cpu::execute()
 
         case (0x2):
             uint8_t A = getUpper(registers[0]);
-            int DE = registers[2];
+            uint16_t DE = registers[2];
             ldMem8(DE, A);
             return 2;
 
@@ -923,17 +927,14 @@ int cpu::execute()
             return 1;
 
         case (0xE):
-            uint8_t D = getUpper(registers[2]);
-            uint8_t E = getLower(registers[2]);
-            E = fetchNextByte();
-
-            registers[1] = (D << 8) | E;
+            ldReg8('C',fetchNextByte());
             return 2;
 
         case (0xF):
             uint8_t A = getUpper(registers[0]);
             uint8_t F = getLower(registers[0]);
-            bool rightMost = A & 0x1;
+            bool rightMost = A & 0x1;       
+            A = (A >> 1) | (getFlag('C') << 7);
             if (rightMost)
             {
                 setFlag('C');
@@ -942,7 +943,6 @@ int cpu::execute()
             {
                 clearFlag('C');
             }
-            A = (A >> 1) | (getFlag('C') << 7);
             return 1;
 
         default:
@@ -962,7 +962,7 @@ int cpu::execute()
             }
             else
             {
-                fetchNextByte();
+                pc++; //  skip intermediate instruction
                 return 2;
             }
 
@@ -972,9 +972,8 @@ int cpu::execute()
 
         case (0x2):
             uint8_t A = getUpper(registers[0]);
-            int HL = registers[3];
+            uint16_t& HL = registers[3];
             ldMem8(HL++, A);
-            registers[3] = HL;
             return 2;
 
         case (0x3):
@@ -997,18 +996,24 @@ int cpu::execute()
             // A -> binary coded decimal
             // add base ten * six to turn from Hex to Decimal, and use H/C flags
             uint8_t A = getUpper(registers[0]);
-            uint8_t F = getLower(registers[0]);
             uint8_t lower_nibble = A & 0xF;
             uint8_t upper_nibble = A & 0xF0;
-            if (lower_nibble > 0x9 || getFlag('H'))
-            {
-                A += 0x6;
+            if(getFlag('N')){
+                if(getFlag('C')){
+                    A -= 0x60;
+                }
+                if(getFlag('H')){
+                    A -= 0x06;
+                }
             }
-            clearFlag('H'); // clear, as pretty much only used for BCD
-            if (upper_nibble > 0x90 || getFlag('C'))
-            {
-                A += 0x60;
-                setFlag('C');
+            else{
+                if(getFlag('C') || upper_nibble > 0x99){
+                    A += 0x60;
+                    setFlag('C');
+                }
+                if(getFlag('H') || lower_nibble > 0x09){
+                    A += 0x06;
+                }
             }
 
             if (A == 0)
@@ -1020,7 +1025,9 @@ int cpu::execute()
                 clearFlag('Z');
             }
 
-            registers[0] = (A << 8) | F;
+            clearFlag('H');
+
+            ldReg8('A',A);
             return 1;
 
         case (0x8):
@@ -1031,7 +1038,7 @@ int cpu::execute()
             }
             else
             {
-                fetchNextByte();
+                pc++;
                 return 2;
             }
 
@@ -1041,9 +1048,8 @@ int cpu::execute()
             return 2;
 
         case (0xA):
-            uint16_t HL = registers[3];
-            ldReg8('A', HL);
-            HL++;
+            uint16_t& HL = registers[3];
+            ldReg8('A', HL++);
             return 2;
 
         case (0xB):
@@ -1059,13 +1065,12 @@ int cpu::execute()
             return 1;
 
         case (0xE):
-            ldReg8('E', fetchNextByte());
+            ldReg8('L', fetchNextByte());
             return 2;
 
         case (0xF):
             uint8_t A = ~getUpper(registers[0]);
-            uint8_t F = getLower(registers[0]);
-            registers[0] = (A << 8) | F;
+            ldReg8('A',A);
             return 1;
 
         default:
@@ -1085,7 +1090,7 @@ int cpu::execute()
             }
             else
             {
-                fetchNextByte();
+                pc++;
                 return 2;
             }
 
@@ -1095,9 +1100,8 @@ int cpu::execute()
 
         case (0x2):
             uint8_t A = getUpper(registers[0]);
-            uint16_t HL = registers[3];
+            uint16_t& HL = registers[3];
             ldMem8(HL--, A);
-            registers[3] = HL;
             return 2;
 
         case (0x3):
@@ -1105,18 +1109,21 @@ int cpu::execute()
             return 2;
 
         case (0x4):
-            registers[3]++;
+            uint8_t data = MMU.readMem(registers[3]) + 1;
+            MMU.writeMem(data, registers[3]);
             return 2;
 
         case (0x5):
-            registers[3]--;
+            uint8_t data = MMU.readMem(registers[3]) - 1;
+            MMU.writeMem(data, registers[3]);
             return 2;
 
         case (0x6):
-            ldMem8(registers[3], fetchNextByte());
-
+            MMU.writeMem(fetchNextByte(),registers[3]);
+            return 3;
         case (0x7):
             setFlag('C');
+            return 1;
 
         case (0x8):
             if (getFlag('C'))
@@ -1126,7 +1133,7 @@ int cpu::execute()
             }
             else
             {
-                fetchNextByte();
+                pc++;
                 return 2;
             }
 
@@ -1136,10 +1143,8 @@ int cpu::execute()
             return 2;
 
         case (0xA):
-            uint8_t A = getUpper(registers[0]);
-            uint16_t HL = registers[3];
-            ldMem8(HL--, A);
-            registers[3] = HL;
+            uint16_t& HL = registers[3];
+            ldReg8('A',HL--);
             return 2;
 
         case (0xB):
@@ -1962,8 +1967,8 @@ int cpu::execute()
             }
 
         case (0x1):
-            uint8_t D = popStack();
             uint8_t E = popStack();
+            uint8_t D = popStack();
             registers[2] = (D >> 8) | E;
 
         case (0x2):
@@ -2102,11 +2107,10 @@ int cpu::execute()
             return 4;
         case (0x9):
             pc = registers[3];
-            pc += 1;
             return 1;
         case (0xA):
             uint8_t A = getUpper(registers[0]);
-            ldMem8(fetchNext2Bytes(),A);
+            ldMem8(fetchNext2Bytes(), A);
             return 4;
         case (0xB):
             return 0;
@@ -2118,9 +2122,9 @@ int cpu::execute()
             xorA(fetchNextByte());
             return 2;
         case (0xF):
-           storePC();
-           pc = 0x28;
-           return 4; 
+            storePC();
+            pc = 0x28;
+            return 4;
         default:
             throw std::runtime_error("Invalid Opcode!");
         }
@@ -2132,10 +2136,10 @@ int cpu::execute()
         {
         case (0x0):
             uint16_t data = MMU.readMem(fetchNextByte() | (0xFF00));
-            ldReg8('A',data);   
-            return 3; 
+            ldReg8('A', data);
+            return 3;
         case (0x1):
-            uint8_t F = popStack(); 
+            uint8_t F = popStack();
             uint8_t A = popStack();
             return 3;
         case (0x2):
@@ -2171,7 +2175,7 @@ int cpu::execute()
         case (0xA):
             ldReg8('A', MMU.readMem(fetchNext2Bytes()));
             return 4;
-        case (0xB): 
+        case (0xB):
             /*TODO: Interrupt */
         case (0xC):
             return 0;
