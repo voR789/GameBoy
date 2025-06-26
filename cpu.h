@@ -56,6 +56,20 @@ class cpu{
         
         void ldMem8(int address, uint8_t byte);
         void ldReg8(char reg, uint8_t byte);
+        
+        // prefixed helpers
+        uint8_t RLC(uint8_t byte); // rotate left, store bit in carry
+        uint8_t RL(uint8_t byte); // rotate left, through carry
+        uint8_t RRC(uint8_t byte); // rotate right, store bit in carry
+        uint8_t RR(uint8_t byte); // rotate right, through carry 
+        uint8_t SLA(uint8_t byte); // shift left, through carry flag, bit 0 = 0
+        uint8_t SRA(uint8_t byte); // shift right, through carry flag, bit 7 unchanged
+        uint8_t SWAP(uint8_t byte); // swap nibbles
+        uint8_t SRL(uint8_t byte); // shift right, through carry flag, bit 7 = 0
+        void BIT_(uint8_t byte, int bit); // copy ! bit _ into Z flag
+        uint8_t RES_(uint8_t byte, int bit); // reset bit _ 
+        uint8_t SET_(uint8_t byte, int bit); // set bit _
+        
         // hardware functions
         int step();
         int execute();
