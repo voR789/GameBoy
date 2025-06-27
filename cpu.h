@@ -10,7 +10,8 @@
 #define N_FLAG 0x40 // bit 6 of F 0100 0000 - Subtract flag
 #define H_FLAG 0x20 // bit 5 of F 0010 0000 - Half carry flag, overflow in lower nibble
 #define C_FLAG 0x10 // bit 4 of F 0001 0000 - Full carry flag, overflow in higher nibble
-
+#define IE_REGISTER 0xFFFF // interrupt enable register
+#define IF_REGISTER 0xFF0F // Interrupt flag
 class cpu{
     private:
         mmu& MMU;
@@ -24,6 +25,10 @@ class cpu{
         uint16_t pc; 
         uint16_t opcode;
         int cycles;
+        bool IME;
+        bool stop;
+        bool halt;
+        bool EI_FLAG;
         // TODO: implement timers interrupts, controls, and gfx later
         
     public:
@@ -75,6 +80,7 @@ class cpu{
         int execute();
         int executePrefixed();
         int executeOpcode();
+        int handleInterrupts();
         
 };
 

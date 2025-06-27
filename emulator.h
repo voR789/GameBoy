@@ -10,7 +10,7 @@ class emulator{
         mmu MMU;
         ppu PPU;
     public:
-        void step();
+        
 };
 
 #endif
