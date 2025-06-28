@@ -50,14 +50,14 @@ class cpu{
         void adcA(uint8_t byte);
         void subA(uint8_t byte);
         void sbcA(uint8_t byte);
-        void andA(uint8_t byte){}
-        void xorA(uint8_t byte){}
-        void orA(uint8_t byte){}
-        void cpA(uint8_t byte){}
+        void andA(uint8_t byte);
+        void xorA(uint8_t byte);
+        void orA(uint8_t byte);
+        void cpA(uint8_t byte);
 
-        uint8_t popStack(){}
-        void pushStack(uint8_t byte){}
-        void storePC(){}
+        uint8_t popStack();
+        void pushStack(uint8_t byte);
+        void storePC();
         
         void ldMem8(int address, uint8_t byte);
         void ldReg8(char reg, uint8_t byte);
@@ -81,6 +81,7 @@ class cpu{
         int executePrefixed();
         int executeOpcode();
         int handleInterrupts();
+        void setPC(uint16_t n);
         
 };
 

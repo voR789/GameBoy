@@ -4,6 +4,6 @@
 class timer{
     private:
     public:
-}
+};
 
 #endif
