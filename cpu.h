@@ -24,7 +24,7 @@ class cpu{
         uint16_t sp;
         uint16_t pc; 
         uint16_t opcode;
-        int cycles;
+        uint64_t cycles;
         bool IME;
         bool stop;
         bool halt;
@@ -82,6 +82,7 @@ class cpu{
         int executeOpcode();
         int handleInterrupts();
         void setPC(uint16_t n);
+        void dumpCopyDebug(mmu& MMU);
         
 };
 

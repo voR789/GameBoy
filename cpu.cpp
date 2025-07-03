@@ -9,6 +9,7 @@
 #include "mmu.h"
 #include "ppu.h"
 #include "timer.h"
+#include <iomanip>
 
 using std::string, std::memset, std::ifstream, std::cerr;
 
@@ -30,13 +31,13 @@ bool cpu::getFlag(char flag)
     switch (flag)
     {
     case ('Z'):
-        return (F & Z_FLAG);
+        return (F & Z_FLAG) != 0;
     case ('N'):
-        return (F & N_FLAG);
+        return (F & N_FLAG) != 0;
     case ('H'):
-        return (F & H_FLAG);
+        return (F & H_FLAG) != 0;
     case ('C'):
-        return (F & C_FLAG);
+        return (F & C_FLAG) != 0;
     default:
         throw std::runtime_error("getFlag(): Invalid Flag Call");
     }
@@ -96,8 +97,38 @@ void cpu::fetchOpcode()
 {
     opcode = MMU.readMem(pc++);
 
-    std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " Z val:" << getFlag('Z') << std::endl;
-   // std::cout << "AFCDDEHL: " << (int)getUpper(registers[0]) << "    "<<(int)getLower(registers[0]) << "    "<<(int)getUpper(registers[1]) << "    "<<(int)getLower(registers[1]) << "    "<<(int)getUpper(registers[2]) << "    "<<(int)getLower(registers[2]) << "    "<<(int)getUpper(registers[3]) << "    "<<(int)getLower(registers[3]) << std::endl;
+    // std::cout << "AFCDDEHL: " << (int)getUpper(registers[0]) << "    "<<(int)getLower(registers[0]) << "    "<<(int)getUpper(registers[1]) << "    "<<(int)getLower(registers[1]) << "    "<<(int)getUpper(registers[2]) << "    "<<(int)getLower(registers[2]) << "    "<<(int)getUpper(registers[3]) << "    "<<(int)getLower(registers[3]) << std::endl;
+    /*
+        uint16_t currentPC = pc;
+        opcode = MMU.readMem(pc++);
+
+
+        // Get immediate values
+        uint8_t imm8_1 = MMU.readMem(pc);
+        uint8_t imm8_2 = MMU.readMem(pc + 1);
+
+        // Logging
+        static std::ofstream trace("trace_log.txt", std::ios::app); // keeps file open between calls
+
+        trace << std::hex << std::uppercase << std::setfill('0');
+        trace << "PC: 0x" << std::setw(4) << currentPC
+              << "  OP: 0x" << std::setw(2) << (int)opcode
+              << "  IMM: [0x" << std::setw(2) << (int)imm8_1
+              << " 0x" << std::setw(2) << (int)imm8_2 << "]  ";
+
+        trace << "AF: 0x" << std::setw(4) << registers[0]
+              << " BC: 0x" << std::setw(4) << registers[1]
+              << " DE: 0x" << std::setw(4) << registers[2]
+              << " HL: 0x" << std::setw(4) << registers[3]
+              << " SP: 0x" << std::setw(4) << sp;
+
+        trace << "  FLAGS [Z=" << getFlag('Z')
+              << " N=" << getFlag('N')
+              << " H=" << getFlag('H')
+              << " C=" << getFlag('C') << "]";
+
+        trace << std::endl;
+        */
 }
 
 uint8_t cpu::fetchNextByte()
@@ -197,7 +228,6 @@ void cpu::inc8(char reg)
         byte = getLower(registers[2]);
         result = byte + 1;
         uint8_t D = getUpper(registers[2]);
-
         if ((byte & 0xF) + 1 > 0xF)
         {
             setFlag('H');
@@ -251,28 +281,28 @@ void cpu::inc8(char reg)
         throw std::runtime_error("inc8 Error, no case");
     }
     }
-
     if (result == 0)
     {
         setFlag('Z');
-    }
+     }
     else
     {
         clearFlag('Z');
-    }
+     }
 
     clearFlag('N');
-}
+    }
 
 void cpu::dec8(char reg)
 {
     uint8_t byte;
+    uint8_t result;
     switch (reg)
     {
     case ('A'):
     {
         byte = getUpper(registers[0]);
-
+        result = byte - 1;
         // carry flags indicate borrows
         if ((byte & 0xF) == 0)
         {
@@ -284,13 +314,14 @@ void cpu::dec8(char reg)
         } // if last nibble is zero, then it will borrow
 
         uint8_t F = getLower(registers[0]);
-        registers[0] = ((uint8_t)(byte - 1) << 8) | F;
+        registers[0] = ((result) << 8) | F;
         break;
         // no "F" - reserved for flags
     }
     case ('B'):
     {
         byte = getUpper(registers[1]);
+        result = byte - 1;
         uint8_t C = getLower(registers[1]);
 
         if ((byte & 0xF) == 0)
@@ -302,12 +333,13 @@ void cpu::dec8(char reg)
             clearFlag('H');
         } // if last nibble is zero, then it will borrow
 
-        registers[1] = ((uint8_t)(byte - 1) << 8) | C;
+        registers[1] = ((result) << 8) | C;
         break;
     }
     case ('C'):
     {
         byte = getLower(registers[1]);
+        result = byte - 1;
         uint8_t B = getUpper(registers[1]);
 
         if ((byte & 0xF) == 0)
@@ -319,12 +351,13 @@ void cpu::dec8(char reg)
             clearFlag('H');
         } // if last nibble is zero, then it will borrow
 
-        registers[1] = (B << 8) | (uint8_t)(byte - 1);
+        registers[1] = (B << 8) | (result);
         break;
     }
     case ('D'):
     {
         byte = getUpper(registers[2]);
+        result = byte - 1;
         uint8_t E = getLower(registers[2]);
 
         if ((byte & 0xF) == 0)
@@ -336,12 +369,13 @@ void cpu::dec8(char reg)
             clearFlag('H');
         } // if last nibble is zero, then it will borrow
 
-        registers[2] = ((uint8_t)(byte - 1) << 8) | E;
+        registers[2] = ((result) << 8) | E;
         break;
     }
     case ('E'):
     {
         byte = getLower(registers[2]);
+        result = byte - 1;
         uint8_t D = getUpper(registers[2]);
 
         if ((byte & 0xF) == 0)
@@ -353,12 +387,13 @@ void cpu::dec8(char reg)
             clearFlag('H');
         } // if last nibble is zero, then it will borrow
 
-        registers[2] = (D << 8) | (uint8_t)(byte - 1);
+        registers[2] = (D << 8) | (result);
         break;
     }
     case ('H'):
     {
         byte = getUpper(registers[3]);
+        result = byte - 1;
         uint8_t L = getLower(registers[3]);
 
         if ((byte & 0xF) == 0)
@@ -370,12 +405,13 @@ void cpu::dec8(char reg)
             clearFlag('H');
         } // if last nibble is zero, then it will borrow
 
-        registers[3] = ((uint8_t)(byte - 1) << 8) | L;
+        registers[3] = ((result) << 8) | L;
         break;
     }
     case ('L'):
     {
         byte = getLower(registers[3]);
+        result = byte - 1;
         uint8_t H = getUpper(registers[3]);
 
         if ((byte & 0xF) == 0)
@@ -387,7 +423,7 @@ void cpu::dec8(char reg)
             clearFlag('H');
         } // if last nibble is zero, then it will borrow
 
-        registers[3] = (H << 8) | (uint8_t)(byte - 1);
+        registers[3] = (H << 8) | (result);
         break;
     }
     default:
@@ -396,7 +432,7 @@ void cpu::dec8(char reg)
     }
     }
 
-    if ((uint8_t)(byte - 1) == 0)
+    if ((result) == 0)
     {
         setFlag('Z');
     }
@@ -433,9 +469,10 @@ uint16_t cpu::add16(uint16_t byte1, uint16_t byte2)
 void cpu::addA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
+    uint8_t result = A + byte;
 
     // Z, N, H, and Cy flags
-    if ((uint8_t)(A + byte) == 0)
+    if ((result) == 0)
     {
         setFlag('Z');
     }
@@ -455,7 +492,7 @@ void cpu::addA(uint8_t byte)
         clearFlag('H');
     }
 
-    if (A + byte > 0xFF)
+    if ((int)A + (int)byte > 0xFF)
     {
         setFlag('C');
     }
@@ -464,18 +501,18 @@ void cpu::addA(uint8_t byte)
         clearFlag('C');
     }
 
-    A += byte;
     uint8_t F = getLower(registers[0]);
-    registers[0] = (A << 8) | F;
+    registers[0] = (result << 8) | F;
 }
 
 void cpu::adcA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
     bool Cy = getFlag('C');
+    uint8_t result = A + Cy + byte;
 
     // Z, N, H, and Cy flags
-    if ((uint8_t)(A + byte + Cy) == 0)
+    if ((result) == 0)
     {
         setFlag('Z');
     }
@@ -495,7 +532,7 @@ void cpu::adcA(uint8_t byte)
         clearFlag('H');
     }
 
-    if ((A + byte + Cy) > 0xFF)
+    if (((int)A + (int)byte + (int)Cy) > 0xFF)
     {
         setFlag('C');
     }
@@ -504,17 +541,16 @@ void cpu::adcA(uint8_t byte)
         clearFlag('C');
     }
 
-    A += (byte + Cy);
     uint8_t F = getLower(registers[0]);
-    registers[0] = (A << 8) | F;
+    registers[0] = (result << 8) | F;
 }
 
 void cpu::subA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
-
+    uint8_t result = A - byte;
     // Z, N, H, and Cy flags
-    if ((uint8_t)(A - byte) == 0)
+    if ((result) == 0)
     {
         setFlag('Z');
     }
@@ -543,18 +579,18 @@ void cpu::subA(uint8_t byte)
         clearFlag('C');
     }
 
-    A -= byte;
     uint8_t F = getLower(registers[0]);
-    registers[0] = (A << 8) | F;
+    registers[0] = (result << 8) | F;
 }
 
 void cpu::sbcA(uint8_t byte)
 {
     uint8_t A = getUpper(registers[0]);
     bool Cy = getFlag('C');
+    uint8_t result = A - (byte + Cy);
 
     // Z, N, H, and Cy flags
-    if ((uint8_t)(A - (byte + Cy)) == 0)
+    if ((result) == 0)
     {
         setFlag('Z');
     }
@@ -583,9 +619,8 @@ void cpu::sbcA(uint8_t byte)
         clearFlag('C');
     }
 
-    A -= (byte + Cy);
     uint8_t F = getLower(registers[0]);
-    registers[0] = (A << 8) | F;
+    registers[0] = (result << 8) | F;
 }
 
 void cpu::andA(uint8_t byte)
@@ -687,7 +722,7 @@ void cpu::cpA(uint8_t byte)
 
 uint8_t cpu::popStack()
 {
-    
+
     return MMU.readMem(sp++);
     // the stack in the gb memory map is reverse mapped, starting at 0x..., and decreasing to 0x..., so ++ is "popping" in this context
 }
@@ -700,6 +735,7 @@ void cpu::pushStack(uint8_t byte)
 
 void cpu::storePC()
 {
+
     uint8_t upper = ((pc & 0xFF00) >> 8);
     uint8_t lower = (pc & 0xFF);
     // TODO: check
@@ -852,7 +888,7 @@ int cpu::execute()
         }
         case (0xA):
         {
-            uint16_t BC_data = MMU.readMem(registers[1]);
+            uint8_t BC_data = MMU.readMem(registers[1]);
             ldReg8('A', BC_data);
 
             return 2;
@@ -906,6 +942,8 @@ int cpu::execute()
             {
                 stop = true;
             } // bug with some games, if next byte isnt NOP, treat as NOP
+            MMU.writeMem(0x00, 0xFF04); // reset DIV
+            TIMER.stopCall();
             return 4;
         }
         case (0x1):
@@ -958,7 +996,8 @@ int cpu::execute()
 
         case (0x8):
         {
-            pc += (int8_t)fetchNextByte();
+            int8_t jump = fetchNextByte();
+            pc += jump;
             return 3;
         }
 
@@ -973,7 +1012,7 @@ int cpu::execute()
         }
         case (0xA):
         {
-            uint16_t DE_data = MMU.readMem(registers[2]);
+            uint8_t DE_data = MMU.readMem(registers[2]);
             ldReg8('A', DE_data);
 
             return 2;
@@ -1022,14 +1061,14 @@ int cpu::execute()
         {
         case (0x0):
         {
+            int8_t jump = static_cast<int8_t>(fetchNextByte());
             if (!getFlag('Z'))
             {
-                pc += (int8_t)fetchNextByte();
+                pc += jump;
                 return 3;
             }
             else
             {
-                pc++; //  skip intermediate instruction
                 return 2;
             }
         }
@@ -1112,14 +1151,14 @@ int cpu::execute()
         }
         case (0x8):
         {
+            int8_t jump = fetchNextByte();
             if (getFlag('Z'))
             {
-                pc += (int8_t)fetchNextByte();
+                pc += jump;
                 return 3;
             }
             else
             {
-                pc++;
                 return 2;
             }
         }
@@ -1174,14 +1213,14 @@ int cpu::execute()
         {
         case (0x0):
         {
+            int8_t jump = fetchNextByte();
             if (!getFlag('C'))
             {
-                pc += (int8_t)fetchNextByte();
+                pc += jump;
                 return 3;
             }
             else
             {
-                pc++;
                 return 2;
             }
         }
@@ -1226,14 +1265,14 @@ int cpu::execute()
         }
         case (0x8):
         {
+            int8_t jump = fetchNextByte();
             if (getFlag('C'))
             {
-                pc += (int8_t)fetchNextByte();
+                pc += jump;
                 return 3;
             }
             else
             {
-                pc++;
                 return 2;
             }
         }
@@ -2247,34 +2286,36 @@ int cpu::execute()
         }
         case (0x2):
         {
+            uint16_t jump = fetchNext2Bytes();
             if (!getFlag('Z'))
             {
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 4;
             }
             else
             {
-                pc += 3;
                 return 3;
             }
         }
-        case (0x3):{
+        case (0x3):
+        {
             pc = fetchNext2Bytes();
             return 4;
         }
         case (0x4):
+        {
+            uint16_t jump = fetchNext2Bytes();
             if (!getFlag('Z'))
             {
                 storePC();
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 6;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
-        
+        }
         case (0x5):
         {
             uint8_t B = getUpper(registers[1]);
@@ -2316,35 +2357,42 @@ int cpu::execute()
             return 4;
         }
         case (0xA):
+        {
+            uint16_t jump = fetchNext2Bytes();
             if (getFlag('Z'))
             {
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 4;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
+        }
         case (0xB):
             return 0; /// nan
 
         case (0xC):
+        {
+            uint16_t jump = fetchNext2Bytes();
             if (getFlag('Z'))
             {
                 storePC();
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 6;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
+        }
         case (0xD):
+        {
+            uint16_t jump = fetchNext2Bytes();
             storePC();
-            pc = fetchNext2Bytes();
+            pc = jump;
             return 6;
+        }
         case (0xE):
             adcA(fetchNextByte());
             return 2;
@@ -2382,31 +2430,33 @@ int cpu::execute()
         }
         case (0x2):
         {
+            uint16_t jump = fetchNext2Bytes();
             if (!getFlag('C'))
             {
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 4;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
         }
         case (0x3):
             return 0; // nan
         case (0x4):
+        {
+            uint16_t jump = fetchNext2Bytes();
             if (!getFlag('C'))
             {
                 storePC();
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 6;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
+        }
         case (0x5):
         {
             uint8_t D = getUpper(registers[2]);
@@ -2445,30 +2495,34 @@ int cpu::execute()
             return 4;
         }
         case (0xA):
+        {
+            uint16_t jump = fetchNext2Bytes();
             if (getFlag('C'))
             {
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 4;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
+        }
         case (0xB):
             return 0; // nan
         case (0xC):
+        {
+            uint16_t jump = fetchNext2Bytes();
             if (getFlag('C'))
             {
                 storePC();
-                pc = fetchNext2Bytes();
+                pc = jump;
                 return 6;
             }
             else
             {
-                pc += 2;
                 return 3;
             }
+        }
         case (0xD):
             return 0; // nan
         case (0xE):
@@ -2612,6 +2666,18 @@ int cpu::execute()
         {
             int8_t signedNext = static_cast<int8_t>(fetchNextByte());
             registers[3] = sp + signedNext;
+            clearFlag('Z');
+            clearFlag('N');
+            if((sp & 0xF) + (signedNext & 0xF) > 0xF){
+                setFlag('H');
+            } else{
+                clearFlag('H');
+            }
+            if((sp & 0xFF) + (signedNext & 0xFF) > 0xFF){
+                setFlag('C');
+            } else{
+                clearFlag('C');
+            }   
             return 3;
         }
         case (0x9):
@@ -4632,11 +4698,41 @@ void cpu::setPC(uint16_t n)
 {
     pc = n;
 }
+
+const uint16_t romStart = 0x4000;     // assumed source in ROM
+const uint16_t wramStart = 0xC000;    // assumed destination in WRAM
+const int copyLength = 0x100;         // or however many bytes your copy loop should do
+
+void cpu::dumpCopyDebug(mmu& MMU) {
+    std::cout << "Comparing ROM vs WRAM after copy loop:\n";
+    bool mismatch = false;
+
+    for (int i = 0; i < copyLength; i++) {
+        uint8_t romByte = MMU.readMem(romStart + i);
+        uint8_t ramByte = MMU.readMem(wramStart + i);
+
+        std::cout << std::hex << std::setw(4) << std::setfill('0') << romStart + i 
+                  << ": ROM=0x" << std::setw(2) << (int)romByte 
+                  << " WRAM=0x" << std::setw(2) << (int)ramByte;
+
+        if (romByte != ramByte) {
+            std::cout << " <-- mismatch";
+            mismatch = true;
+        }
+
+        std::cout << "\n";
+    }
+
+    if (!mismatch) {
+        std::cout << "✅ Copy loop succeeded: ROM and WRAM match for " << copyLength << " bytes.\n";
+    } else {
+        std::cout << "❌ Copy loop failed: Some bytes were not copied correctly.\n";
+    }
+}
 // Constructor
 cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), TIMER(TIMERref)
 {
     memset(registers, 0, sizeof(registers));
-    MMU.clearMem();
     pc = 0x0000;
     sp = 0xFFFE; // only lives in high ram for boot, then moves to work ram, downwardly
     opcode = 0;
@@ -4651,10 +4747,10 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
     registers[3] = 0x014D;
     sp = 0xFFFE;
     pc = 0x0100;
-    MMU.writeMem(0x91,0xFF40); // LCDC
-    MMU.writeMem(0x85,0xFF41); // STAT
-    MMU.writeMem(0x00,0xFF44); // LY
-    MMU.writeMem(0xFC,0xFF47); // BGP
+    MMU.writeMem(0x91, 0xFF40); // LCDC
+    MMU.writeMem(0x85, 0xFF41); // STAT
+    MMU.writeMem(0x00, 0xFF44); // LY
+    MMU.writeMem(0xFC, 0xFF47); // BGP
 }
 
 // Game loop
@@ -4662,13 +4758,32 @@ int cpu::step()
 {
     // handle stop
     // handle halt
+    //std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
+    if(pc >= 0xC000){
+        dumpCopyDebug(MMU);
+    }
+    uint8_t A = getUpper(registers[0]);
+    uint16_t HL = registers[3];
+    uint16_t DE = registers[2];
+        std::cout << std::hex << std::uppercase;
+        std::cout << "DEBUG: A = 0x" << static_cast<int>(A)
+          << " | HL = 0x" << HL
+          << " | DE = 0x" << DE
+          << std::endl;
     fetchOpcode();
-    //std::cout << "PC=" << std::hex << pc << " OPCODE=" << std::hex << opcode << std::endl;
+    int c = 0;
+    if(pc > 700){
+        std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
+        std::cin >> c;
+    }
+        /*for(int i = 0x200; i < 0x215; i++){
+        std::cout << std::hex << "0x" << (int)i << " --0x" << (int)MMU.readMem(i) << std::endl;
+    }*/
     int interruptCycles = handleInterrupts();
     cycles += interruptCycles;
     if (interruptCycles == 0)
     {
-        //std::cout << "-----------------" << std::endl;
+        // std::cout << "-----------------" << std::endl;
         cycles += executeOpcode();
     }
     if (EI_FLAG)
@@ -4676,13 +4791,8 @@ int cpu::step()
         IME = true;
         EI_FLAG = false;
     }
-    
-    //pause mode
-    if(opcode == 0){
-    int c = 0;
-    //std::cin >> c;
-    //std::cout << ".";
-    }
+
+
     return cycles;
 
     // return cycles to help sync with ppu and timer

@@ -6,13 +6,13 @@
 int main(){
     mmu MMU;
     ppu PPU;
-    timer TIMER;
+    timer TIMER(MMU);
     cpu CPU(MMU, PPU, TIMER);
-    MMU.loadGame("03-op sp,hl.gb");
+    MMU.loadGame("01-special.gb");
     CPU.setPC(0x0100);
     while(true) {
-        CPU.step();
-}
+        TIMER.tick(CPU.step());
+    } 
 
     return 0;
 }
