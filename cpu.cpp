@@ -1110,21 +1110,18 @@ int cpu::execute()
             // add base ten * six to turn from Hex to Decimal, and use H/C flags
             uint8_t A = getUpper(registers[0]);
             uint8_t lower_nibble = A & 0xF;
-            uint8_t upper_nibble = A & 0xF0;
             if (getFlag('N'))
-            {
-                if (getFlag('C') )
-                {
+            { // bcd subtraction logic -> only based upon flags
+                if(getFlag('C')){
                     A -= 0x60;
                 }
-                if (getFlag('H'))
-                {
+                if(getFlag('H')){
                     A -= 0x06;
                 }
             }
             else
-            {
-                if (getFlag('C') || upper_nibble > 0x99)
+            { // bcd addition logic -> addition can cause overflows with no flags
+                if (getFlag('C') || A > 0x99)
                 {
                     A += 0x60;
                     setFlag('C');
@@ -1134,7 +1131,9 @@ int cpu::execute()
                     A += 0x06;
                 }
             }
+            
 
+            // flag checks
             if (A == 0)
             {
                 setFlag('Z');
