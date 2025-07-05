@@ -82,7 +82,6 @@ class cpu{
         int executeOpcode();
         int handleInterrupts();
         void setPC(uint16_t n);
-        void dumpCopyDebug(mmu& MMU);
         
 };
 

@@ -74,12 +74,13 @@ void mmu::writeMem(uint8_t byte, int index) {
     if (index >= 0xFF00 && index <= 0xFF7F) {
         switch (index) {
             case 0xFF01: // SB
+                //std::cout << "WRITE TO FF01: " << byte << " (" << (char)byte << ")\n";
                 memory[index] = byte;
                 break;
             case 0xFF02: // SC
                 memory[index] = byte;
                 if (byte == 0x81) {
-                    std::cout << static_cast<char>(memory[0xFF01]);
+                    std::cout << "" << static_cast<char>(memory[0xFF01]);
                     std::cout.flush();
                 }
                 break;

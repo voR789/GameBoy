@@ -284,14 +284,14 @@ void cpu::inc8(char reg)
     if (result == 0)
     {
         setFlag('Z');
-     }
+    }
     else
     {
         clearFlag('Z');
-     }
+    }
 
     clearFlag('N');
-    }
+}
 
 void cpu::dec8(char reg)
 {
@@ -996,7 +996,7 @@ int cpu::execute()
 
         case (0x8):
         {
-            int8_t jump = fetchNextByte();
+            int8_t jump = static_cast<int8_t>(fetchNextByte());
             pc += jump;
             return 3;
         }
@@ -1035,7 +1035,7 @@ int cpu::execute()
         }
         case (0xE):
         {
-            ldReg8('C', fetchNextByte());
+            ldReg8('E', fetchNextByte());
             return 2;
         }
         case (0xF):
@@ -1113,7 +1113,7 @@ int cpu::execute()
             uint8_t upper_nibble = A & 0xF0;
             if (getFlag('N'))
             {
-                if (getFlag('C'))
+                if (getFlag('C') )
                 {
                     A -= 0x60;
                 }
@@ -1171,7 +1171,8 @@ int cpu::execute()
         case (0xA):
         {
             uint16_t &HL = registers[3];
-            ldReg8('A', HL++);
+            uint8_t HL_data = MMU.readMem(HL++);
+            ldReg8('A', HL_data);
             return 2;
         }
         case (0xB):
@@ -1186,7 +1187,7 @@ int cpu::execute()
         }
         case (0xD):
         {
-            dec8('H');
+            dec8('L');
             return 1;
         }
         case (0xE):
@@ -1213,7 +1214,7 @@ int cpu::execute()
         {
         case (0x0):
         {
-            int8_t jump = fetchNextByte();
+            int8_t jump = static_cast<int8_t>(fetchNextByte());
             if (!getFlag('C'))
             {
                 pc += jump;
@@ -1243,19 +1244,54 @@ int cpu::execute()
         }
         case (0x4):
         {
-            uint8_t data = MMU.readMem(registers[3]) + 1;
+            uint8_t data = MMU.readMem(registers[3]);
+            if ((data & 0xF) + 1 > 0xFF)
+            {
+                setFlag('H');
+            }
+            else
+            {
+                clearFlag('H');
+            }
+            data++;
+            if (data == 0)
+            {
+                setFlag('Z');
+            }
+            else
+            {
+                clearFlag('Z');
+            }
+            clearFlag('N');
             MMU.writeMem(data, registers[3]);
             return 2;
         }
         case (0x5):
         {
-            uint8_t data = MMU.readMem(registers[3]) - 1;
+            uint8_t data = MMU.readMem(registers[3]);
+            if ((data & 0xF) == 0x0)
+            {
+                setFlag('H');
+            }
+            else
+            {
+                clearFlag('H');
+            }
+            data--;
+            if (data == 0)
+            {
+                setFlag('Z');
+            }
+            else
+            {
+                clearFlag('Z');
+            }
             MMU.writeMem(data, registers[3]);
             return 2;
         }
         case (0x6):
         {
-            MMU.writeMem(fetchNextByte(), registers[3]);
+            ldMem8(registers[3], fetchNextByte());
             return 3;
         }
         case (0x7):
@@ -1265,7 +1301,7 @@ int cpu::execute()
         }
         case (0x8):
         {
-            int8_t jump = fetchNextByte();
+            int8_t jump = static_cast<int8_t>(fetchNextByte());
             if (getFlag('C'))
             {
                 pc += jump;
@@ -1285,7 +1321,8 @@ int cpu::execute()
         case (0xA):
         {
             uint16_t &HL = registers[3];
-            ldReg8('A', HL--);
+            uint8_t HL_data = MMU.readMem(HL--);
+            ldReg8('A', HL_data);
             return 2;
         }
         case (0xB):
@@ -2422,11 +2459,13 @@ int cpu::execute()
                 return 2;
             }
 
+
         case (0x1):
         {
             uint8_t E = popStack();
             uint8_t D = popStack();
             registers[2] = (D << 8) | E;
+            return 3;
         }
         case (0x2):
         {
@@ -2631,6 +2670,7 @@ int cpu::execute()
         {
             uint8_t F = popStack();
             uint8_t A = popStack();
+            F &= 0xF0; // mask out lower nibble because not used, in case of illegal stack manipulation
             registers[0] = (A << 8) | F;
             return 3;
         }
@@ -2668,16 +2708,22 @@ int cpu::execute()
             registers[3] = sp + signedNext;
             clearFlag('Z');
             clearFlag('N');
-            if((sp & 0xF) + (signedNext & 0xF) > 0xF){
+            if ((sp & 0xF) + (signedNext & 0xF) > 0xF)
+            {
                 setFlag('H');
-            } else{
+            }
+            else
+            {
                 clearFlag('H');
             }
-            if((sp & 0xFF) + (signedNext & 0xFF) > 0xFF){
+            if ((sp & 0xFF) + (signedNext & 0xFF) > 0xFF)
+            {
                 setFlag('C');
-            } else{
+            }
+            else
+            {
                 clearFlag('C');
-            }   
+            }
             return 3;
         }
         case (0x9):
@@ -4699,36 +4745,6 @@ void cpu::setPC(uint16_t n)
     pc = n;
 }
 
-const uint16_t romStart = 0x4000;     // assumed source in ROM
-const uint16_t wramStart = 0xC000;    // assumed destination in WRAM
-const int copyLength = 0x100;         // or however many bytes your copy loop should do
-
-void cpu::dumpCopyDebug(mmu& MMU) {
-    std::cout << "Comparing ROM vs WRAM after copy loop:\n";
-    bool mismatch = false;
-
-    for (int i = 0; i < copyLength; i++) {
-        uint8_t romByte = MMU.readMem(romStart + i);
-        uint8_t ramByte = MMU.readMem(wramStart + i);
-
-        std::cout << std::hex << std::setw(4) << std::setfill('0') << romStart + i 
-                  << ": ROM=0x" << std::setw(2) << (int)romByte 
-                  << " WRAM=0x" << std::setw(2) << (int)ramByte;
-
-        if (romByte != ramByte) {
-            std::cout << " <-- mismatch";
-            mismatch = true;
-        }
-
-        std::cout << "\n";
-    }
-
-    if (!mismatch) {
-        std::cout << "✅ Copy loop succeeded: ROM and WRAM match for " << copyLength << " bytes.\n";
-    } else {
-        std::cout << "❌ Copy loop failed: Some bytes were not copied correctly.\n";
-    }
-}
 // Constructor
 cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), TIMER(TIMERref)
 {
@@ -4758,27 +4774,17 @@ int cpu::step()
 {
     // handle stop
     // handle halt
-    //std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
-    if(pc >= 0xC000){
-        dumpCopyDebug(MMU);
-    }
-    uint8_t A = getUpper(registers[0]);
-    uint16_t HL = registers[3];
-    uint16_t DE = registers[2];
-        std::cout << std::hex << std::uppercase;
-        std::cout << "DEBUG: A = 0x" << static_cast<int>(A)
-          << " | HL = 0x" << HL
-          << " | DE = 0x" << DE
-          << std::endl;
+
     fetchOpcode();
     int c = 0;
-    if(pc > 700){
-        std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
-        std::cin >> c;
+    if (pc >= 0xC000)
+    {
+        // std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
+        // std::cin >> c;
     }
-        /*for(int i = 0x200; i < 0x215; i++){
-        std::cout << std::hex << "0x" << (int)i << " --0x" << (int)MMU.readMem(i) << std::endl;
-    }*/
+    /*for(int i = 0x200; i < 0x215; i++){
+    std::cout << std::hex << "0x" << (int)i << " --0x" << (int)MMU.readMem(i) << std::endl;
+}*/
     int interruptCycles = handleInterrupts();
     cycles += interruptCycles;
     if (interruptCycles == 0)
@@ -4791,7 +4797,6 @@ int cpu::step()
         IME = true;
         EI_FLAG = false;
     }
-
 
     return cycles;
 
