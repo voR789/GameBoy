@@ -14,7 +14,6 @@
 using std::string, std::memset, std::ifstream, std::cerr;
 
 // Helper functions
-#pragma region
 uint8_t cpu::getUpper(uint16_t data)
 {
     return ((data & 0xFF00) >> 8);
@@ -1112,10 +1111,12 @@ int cpu::execute()
             uint8_t lower_nibble = A & 0xF;
             if (getFlag('N'))
             { // bcd subtraction logic -> only based upon flags
-                if(getFlag('C')){
+                if (getFlag('C'))
+                {
                     A -= 0x60;
                 }
-                if(getFlag('H')){
+                if (getFlag('H'))
+                {
                     A -= 0x06;
                 }
             }
@@ -1131,7 +1132,6 @@ int cpu::execute()
                     A += 0x06;
                 }
             }
-            
 
             // flag checks
             if (A == 0)
@@ -1150,7 +1150,7 @@ int cpu::execute()
         }
         case (0x8):
         {
-            int8_t jump = fetchNextByte();
+            int8_t jump = static_cast<int>(fetchNextByte());
             if (getFlag('Z'))
             {
                 pc += jump;
@@ -1198,6 +1198,8 @@ int cpu::execute()
         {
             uint8_t A = ~getUpper(registers[0]);
             ldReg8('A', A);
+            setFlag('N');
+            setFlag('H');
             return 1;
         }
         default:
@@ -1244,7 +1246,7 @@ int cpu::execute()
         case (0x4):
         {
             uint8_t data = MMU.readMem(registers[3]);
-            if ((data & 0xF) + 1 > 0xFF)
+            if ((data & 0xF) + 1 > 0x0F)
             {
                 setFlag('H');
             }
@@ -1285,6 +1287,7 @@ int cpu::execute()
             {
                 clearFlag('Z');
             }
+            setFlag('N');
             MMU.writeMem(data, registers[3]);
             return 2;
         }
@@ -1295,6 +1298,8 @@ int cpu::execute()
         }
         case (0x7):
         {
+            clearFlag('N');
+            clearFlag('H');
             setFlag('C');
             return 1;
         }
@@ -1346,6 +1351,8 @@ int cpu::execute()
         }
         case (0xF):
         {
+            clearFlag('N');
+            clearFlag('H');
             if (getFlag('C'))
             {
                 clearFlag('C');
@@ -2458,7 +2465,6 @@ int cpu::execute()
                 return 2;
             }
 
-
         case (0x1):
         {
             uint8_t E = popStack();
@@ -2624,7 +2630,20 @@ int cpu::execute()
             return 4;
         case (0x8):
         {
-            int8_t signedNext = static_cast<int8_t>(fetchNextByte()); // cast to signed byte
+            uint8_t unsignedNext = fetchNextByte(); // use for flag calc - according to docs
+            int8_t signedNext = static_cast<int8_t>(unsignedNext); // cast to signed byte for actual
+            clearFlag('Z');
+            clearFlag('N');
+            if((sp & 0xF) + (unsignedNext & 0xF) > 0xF){
+                setFlag('H');
+            } else{
+                clearFlag('H');
+            }
+            if((sp & 0xFF) + (unsignedNext) > 0xFF){
+                setFlag('C');
+            } else{
+                clearFlag('C');    
+            }
             sp += signedNext;
             return 4;
         }
@@ -2732,7 +2751,8 @@ int cpu::execute()
             ldReg8('A', MMU.readMem(fetchNext2Bytes()));
             return 4;
         case (0xB):
-            EI_FLAG = true;
+            // set IME, delayed by one instruction cycle
+            EI_COUNTER = 1;
             return 1;
         case (0xC):
             return 0;
@@ -2884,7 +2904,7 @@ uint8_t cpu::SLA(uint8_t byte)
 uint8_t cpu::SRA(uint8_t byte)
 {
     bool rightMost = byte & 0x1;
-    bool b7 = byte & 0x80; // mask bit 7
+    uint8_t b7 = byte & 0x80; // mask bit 7
     uint8_t temp = (byte >> 1) | (b7);
     if (rightMost)
     {
@@ -4681,8 +4701,6 @@ int cpu::executeOpcode()
     }
 }
 
-#pragma endregion
-
 int cpu::handleInterrupts()
 {
     uint8_t IE = MMU.readMem(0xFFFF);
@@ -4697,7 +4715,7 @@ int cpu::handleInterrupts()
             MMU.writeMem(IF & ~0x1, 0xFF0F);
             storePC();
             pc = 0x40;
-            return 5;
+            return 20;
         }
         else if (pending & 0x2)
         {
@@ -4705,7 +4723,7 @@ int cpu::handleInterrupts()
             MMU.writeMem(IF & ~0x2, 0xFF0F);
             storePC();
             pc = 0x48;
-            return 5;
+            return 20;
         }
         else if (pending & 0x4)
         {
@@ -4713,7 +4731,7 @@ int cpu::handleInterrupts()
             MMU.writeMem(IF & ~0x4, 0xFF0F);
             storePC();
             pc = 0x50;
-            return 5;
+            return 20;
         }
         else if (pending & 0x8)
         {
@@ -4721,7 +4739,7 @@ int cpu::handleInterrupts()
             MMU.writeMem(IF & ~0x8, 0xFF0F);
             storePC();
             pc = 0x58;
-            return 5;
+            return 20;
         }
         else if (pending & 0x10)
         {
@@ -4729,7 +4747,7 @@ int cpu::handleInterrupts()
             MMU.writeMem(IF & ~0x10, 0xFF0F);
             storePC();
             pc = 0x60;
-            return 5;
+            return 20;
         }
         else
         {
@@ -4739,9 +4757,10 @@ int cpu::handleInterrupts()
     return 0;
 }
 
-void cpu::setPC(uint16_t n)
-{
-    pc = n;
+// temp stub
+void cpu::triggerVBLankInterrupt(){
+    uint8_t IF = MMU.readMem(0xFF0F);
+    MMU.writeMem(IF | 0x1, 0xFF0F);
 }
 
 // Constructor
@@ -4771,33 +4790,30 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
 // Game loop
 int cpu::step()
 {
-    // handle stop
-    // handle halt
+    // TODO: handle stop and halt
 
     fetchOpcode();
+    cycles += executeOpcode();
+
+    /* Debug Step
     int c = 0;
     if (pc >= 0xC000)
     {
-        // std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
-        // std::cin >> c;
+        std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
+        std::cin >> c;
     }
-    /*for(int i = 0x200; i < 0x215; i++){
-    std::cout << std::hex << "0x" << (int)i << " --0x" << (int)MMU.readMem(i) << std::endl;
-}*/
-    int interruptCycles = handleInterrupts();
-    cycles += interruptCycles;
-    if (interruptCycles == 0)
+    */
+
+    if (EI_COUNTER > 0)
     {
-        // std::cout << "-----------------" << std::endl;
-        cycles += executeOpcode();
+        EI_COUNTER--;
+        if (EI_COUNTER == 0)
+        {
+            IME = true;
+        }
     }
-    if (EI_FLAG)
-    {
-        IME = true;
-        EI_FLAG = false;
-    }
+    // Interrupts - run "in between" instruction cycles, and if triggered, run a CALL to a predetermined handling set
+    cycles += handleInterrupts();
 
     return cycles;
-
-    // return cycles to help sync with ppu and timer
 }

@@ -66,7 +66,6 @@ void timer::tick(int cycles)
                 MMU.writeMem(TMA, REG_TIMA);
                 uint8_t IF = MMU.readMem(0xFF0F);
                 MMU.writeMem(IF | 0x4, 0xFF0F); // set timer interrupt flag
-                throw std::runtime_error("Interrupt called");
             } else{
                 MMU.writeMem(TIMA + 1, REG_TIMA);
             }

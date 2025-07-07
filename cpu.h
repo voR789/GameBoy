@@ -28,7 +28,7 @@ class cpu{
         bool IME;
         bool stop;
         bool halt;
-        bool EI_FLAG;
+        int EI_COUNTER;
         // TODO: implement timers interrupts, controls, and gfx later
         
     public:
@@ -81,7 +81,7 @@ class cpu{
         int executePrefixed();
         int executeOpcode();
         int handleInterrupts();
-        void setPC(uint16_t n);
+        void triggerVBLankInterrupt();
         
 };
 
