@@ -36,7 +36,6 @@ void timer::tick(int cycles)
     bool enabled = TAC & 0x4;
     if (enabled)
     {                         // bit 2 reads enable
-        std::cout << "yooooo" << std::endl;
         int clockSelect = TAC & 0x3; // isolate last 2 bits of TAC
         int MCycles;
         switch (clockSelect)

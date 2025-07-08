@@ -2532,7 +2532,7 @@ int cpu::execute()
         }
         case (0x9):
         {
-            IME = false;
+            IME = true; // set to true - pre interrupt status
             uint8_t lower = popStack();
             uint8_t upper = popStack();
             pc = (upper << 8) | lower;
@@ -4795,15 +4795,13 @@ int cpu::step()
     fetchOpcode();
     cycles += executeOpcode();
 
-    /* Debug Step
-    int c = 0;
+    // Debug Step
     if (pc >= 0xC000)
     {
-        std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
-        std::cin >> c;
+        // std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
+        //std::cin.get();
     }
-    */
-
+    
     if (EI_COUNTER > 0)
     {
         EI_COUNTER--;

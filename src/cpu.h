@@ -29,6 +29,7 @@ class cpu{
         bool stop;
         bool halt;
         int EI_COUNTER;
+        bool preInterruptStatus;
         // TODO: implement timers interrupts, controls, and gfx later
         
     public:
