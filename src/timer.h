@@ -9,10 +9,12 @@ class timer{
         uint16_t div_counter;
         uint8_t tima_counter;
         bool stopped;
+        
     public:
         timer(mmu& mmu_ref);
         void tick(int cycles);
         void stopCall();
+        void printTimerDebug(int cycles);
 };
 
 #endif

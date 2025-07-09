@@ -1,158 +1,54 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build emulator",
-            "type": "cppbuild",
-            "command": "/usr/bin/g++",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "-std=c++17",
-                "-Wall",
-                "-Wextra",
-                "${workspaceFolder}/emulator.cpp",
-                "${workspaceFolder}/cpu.cpp",
-                "${workspaceFolder}/mmu.cpp",
-                "${workspaceFolder}/ppu.cpp",
-                "${workspaceFolder}/timer.cpp",
-                "-o",
-                "${workspaceFolder}/emulator"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "detail": "Build emulator with all source files"
-        },
-        {
-            "label": "build and run",
-            "type": "shell",
-            "command": "/usr/bin/g++",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "-std=c++17",
-                "-Wall",
-                "-Wextra",
-                "${workspaceFolder}/emulator.cpp",
-                "${workspaceFolder}/cpu.cpp",
-                "${workspaceFolder}/mmu.cpp",
-                "${workspaceFolder}/ppu.cpp",
-                "${workspaceFolder}/timer.cpp",
-                "-o",
-                "${workspaceFolder}/emulator",
-                "&&",
-                "./emulator"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": true,
-                "clear": false
-            },
-            "detail": "Build and immediately run the emulator"
-        },
-        {
-            "label": "build debug",
-            "type": "cppbuild",
-            "command": "/usr/bin/g++",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "-O0",
-                "-std=c++17",
-                "-Wall",
-                "-Wextra",
-                "-DDEBUG",
-                "${workspaceFolder}/emulator.cpp",
-                "${workspaceFolder}/cpu.cpp",
-                "${workspaceFolder}/mmu.cpp",
-                "${workspaceFolder}/ppu.cpp",
-                "${workspaceFolder}/timer.cpp",
-                "-o",
-                "${workspaceFolder}/emulator_debug"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "detail": "Build emulator with debug symbols and no optimization"
-        },
-        {
-            "label": "build release",
-            "type": "cppbuild",
-            "command": "/usr/bin/g++",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-O3",
-                "-std=c++17",
-                "-Wall",
-                "-Wextra",
-                "-DNDEBUG",
-                "${workspaceFolder}/emulator.cpp",
-                "${workspaceFolder}/cpu.cpp",
-                "${workspaceFolder}/mmu.cpp",
-                "${workspaceFolder}/ppu.cpp",
-                "${workspaceFolder}/timer.cpp",
-                "-o",
-                "${workspaceFolder}/emulator_release"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "detail": "Build optimized release version of emulator"
-        },
-        {
-            "label": "clean",
-            "type": "shell",
-            "command": "rm",
-            "args": [
-                "-f",
-                "${workspaceFolder}/emulator",
-                "${workspaceFolder}/emulator_debug",
-                "${workspaceFolder}/emulator_release",
-                "${workspaceFolder}/*.o"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "detail": "Clean build artifacts"
-        },
-        {
-            "label": "run emulator",
-            "type": "shell",
-            "command": "${workspaceFolder}/emulator",
-            "args": [],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "test",
-            "dependsOn": "build emulator",
-            "detail": "Build and run the emulator"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Emulator",
+      "type": "shell",
+      "command": "/usr/bin/g++",
+      "args": [
+        "-std=c++17",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Isrc",
+        "src/emulator.cpp",
+        "src/cpu.cpp",
+        "src/mmu.cpp",
+        "src/ppu.cpp",
+        "src/timer.cpp",
+        "-o",
+        "bin/GameBoy"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "detail": "Builds all source files in src/ to create the emulator executable"
+    },
+    {
+      "label": "Run Emulator",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/GameBoy",
+      "args": [],
+      "dependsOn": "Build Emulator",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "detail": "Builds and runs the emulator"
+    },
+  ]
 }

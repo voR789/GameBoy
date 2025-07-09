@@ -940,9 +940,9 @@ int cpu::execute()
             if (next == 0x00)
             {
                 stop = true;
+                MMU.writeMem(0x00, 0xFF04); // reset DIV
+                TIMER.stopCall();
             } // bug with some games, if next byte isnt NOP, treat as NOP
-            MMU.writeMem(0x00, 0xFF04); // reset DIV
-            TIMER.stopCall();
             return 4;
         }
         case (0x1):
@@ -2536,6 +2536,8 @@ int cpu::execute()
             uint8_t lower = popStack();
             uint8_t upper = popStack();
             pc = (upper << 8) | lower;
+            std::cout << "[CPU] Executing RETI at PC: 0x" << std::hex << pc << "\n";
+
             return 4;
         }
         case (0xA):
@@ -4706,53 +4708,51 @@ int cpu::handleInterrupts()
     uint8_t IE = MMU.readMem(0xFFFF);
     uint8_t IF = MMU.readMem(0xFF0F);
     uint8_t pending = IE & IF;
+    int bit;
+    uint8_t address;
     // 0001 1111
-    if (IME)
+    if(pending != 0){
+        halt = false;
+    }
+
+    if (IME && (pending != 0))
     {
         if (pending & 0x1) // any positive number will evaluate to true, mask out highest priority first
         {
-            IME = false;
-            MMU.writeMem(IF & ~0x1, 0xFF0F);
-            storePC();
-            pc = 0x40;
-            return 20;
+            bit = 0;
+            address = 0x40;
         }
         else if (pending & 0x2)
         {
-            IME = false;
-            MMU.writeMem(IF & ~0x2, 0xFF0F);
-            storePC();
-            pc = 0x48;
-            return 20;
+            bit = 1;
+            address = 0x48;
         }
         else if (pending & 0x4)
         {
-            IME = false;
-            MMU.writeMem(IF & ~0x4, 0xFF0F);
-            storePC();
-            pc = 0x50;
-            return 20;
+            bit = 2;
+            address = 0x50;
+            std::cout << "[Interrupt] TIMER serviced at PC: 0x" << std::hex << pc << "\n";
         }
         else if (pending & 0x8)
         {
-            IME = false;
-            MMU.writeMem(IF & ~0x8, 0xFF0F);
-            storePC();
-            pc = 0x58;
-            return 20;
+            bit = 3;
+            address = 0x58;
         }
         else if (pending & 0x10)
         {
-            IME = false;
-            MMU.writeMem(IF & ~0x10, 0xFF0F);
-            storePC();
-            pc = 0x60;
-            return 20;
+            bit = 4;
+            address = 0x60;
         }
         else
         {
             return 0;
         }
+
+        IME = false;
+        storePC();
+        MMU.writeMem(MMU.readMem(0xFF0F) & ~(0x1 << bit),0xFF0F);
+        pc = address;
+        return 20;
     }
     return 0;
 }

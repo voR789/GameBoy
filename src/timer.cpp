@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <cstring>
+#include <bitset>
 
 // Timer registers are at:
 #define REG_DIV 0xFF04
@@ -17,7 +18,7 @@ timer::timer(mmu &MMU_REF) : MMU(MMU_REF), div_counter(0), tima_counter(0), stop
 void timer::tick(int cycles)
 {
     if (stopped)
-    {
+    {  
         return;
     }
 
@@ -30,40 +31,46 @@ void timer::tick(int cycles)
     {
         div_counter += cycles;
     }
-    MMU.writeMem((div_counter >> 8), REG_DIV); // gives the amount of times 256 div_counter
+
+    MMU.setDiv_Counter(div_counter);
+
 
     uint8_t TAC = MMU.readMem(REG_TAC);
-    bool enabled = TAC & 0x4;
+    bool enabled = TAC & 0x4; // bit 2 reads enable
     if (enabled)
-    {                         // bit 2 reads enable
+    {                         
         int clockSelect = TAC & 0x3; // isolate last 2 bits of TAC
-        int MCycles;
+        int TCycles;
         switch (clockSelect)
         {
         case (0):
-            MCycles = 256;
+            TCycles = 1024;
             break;
         case (1):
-            MCycles = 4;
+            TCycles = 16;
             break;
         case (2):
-            MCycles = 16;
+            TCycles = 64;
             break;
         case (3):
-            MCycles = 64;
+            TCycles = 256;
             break;
         } // 1 M-cycle = 4 T-cycles
-        int TCycles = MCycles * 4;
-        uint8_t TMA = MMU.readMem(REG_TMA);
         
         tima_counter += cycles;
+
+        //printTimerDebug(cycles);
 
         while(tima_counter >= TCycles){ // use while loop apporach if tima_counter overflows multiple times over
             uint8_t TIMA = MMU.readMem(REG_TIMA);
             tima_counter -= TCycles; 
             if(TIMA == 0xFF){
-                MMU.writeMem(TMA, REG_TIMA);
+                MMU.writeMem(MMU.readMem(REG_TMA), REG_TIMA);
                 uint8_t IF = MMU.readMem(0xFF0F);
+                
+                //std::cout << "TIMA Overflow, IF: " << std::bitset<8>(IF) << "\n";
+                //std::cout << "IE: " << std::bitset<8>(MMU.readMem(0xFFFF)) << "\n";
+
                 MMU.writeMem(IF | 0x4, 0xFF0F); // set timer interrupt flag
             } else{
                 MMU.writeMem(TIMA + 1, REG_TIMA);
@@ -76,4 +83,26 @@ void timer::tick(int cycles)
 void timer::stopCall()
 {
     stopped = true;
+}
+
+void timer::printTimerDebug(int cycles)
+{
+    uint8_t DIV = div_counter >> 8;
+    uint8_t TIMA = MMU.readMem(REG_TIMA);
+    uint8_t TMA = MMU.readMem(REG_TMA);
+    uint8_t TAC = MMU.readMem(REG_TAC);
+    uint8_t IF = MMU.readMem(0xFF0F);
+
+    std::cout << "=== Timer Debug ===\n";
+    std::cout << "Cycles passed: " << cycles << "\n";
+    std::cout << "DIV:  0x" << std::hex << +DIV
+              << " (raw counter: " << std::dec << div_counter << ")\n";
+    std::cout << "TIMA: 0x" << std::hex << +TIMA << "\n";
+    std::cout << "TMA:  0x" << std::hex << +TMA << "\n";
+    std::cout << "TAC:  0x" << std::hex << +TAC
+              << " (enabled: " << ((TAC & 0x04) ? "yes" : "no")
+              << ", clock: " << (TAC & 0x03) << ")\n";
+    std::cout << "IF:   0x" << std::hex << +IF << "\n";
+    std::cout << "tima_counter: " << std::dec << (int)tima_counter << "\n";
+    std::cout << "===================\n";
 }
