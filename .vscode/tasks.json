@@ -4,20 +4,10 @@
     {
       "label": "Build Emulator",
       "type": "shell",
-      "command": "/usr/bin/g++",
+      "command": "bash",
       "args": [
-        "-std=c++17",
-        "-g",
-        "-Wall",
-        "-Wextra",
-        "-Isrc",
-        "src/emulator.cpp",
-        "src/cpu.cpp",
-        "src/mmu.cpp",
-        "src/ppu.cpp",
-        "src/timer.cpp",
-        "-o",
-        "bin/GameBoy"
+        "-c",
+        "mkdir -p bin && /usr/bin/g++ -std=c++17 -g -Wall -Wextra -Isrc src/emulator.cpp src/cpu.cpp src/mmu.cpp src/ppu.cpp src/timer.cpp -o bin/GameBoy"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -49,6 +39,7 @@
         "panel": "shared"
       },
       "detail": "Builds and runs the emulator"
-    },
+    }
   ]
 }
+
