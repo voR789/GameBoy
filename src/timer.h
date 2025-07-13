@@ -14,7 +14,7 @@ class timer{
         timer(mmu& mmu_ref);
         void tick(int cycles);
         void stopCall();
-        void printTimerDebug(int cycles);
+        void printTimerDebug();
 };
 
 #endif

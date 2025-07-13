@@ -94,8 +94,10 @@ void mmu::writeMem(uint8_t byte, int index) {
                 break;
             case 0xFF07:
                 memory[index] = byte;
-            case 0xFF0F: // IF
+                break;   
+            case 0xFF0F:
                 memory[index] = byte;
+                // std::cout << "[MMU] IF written: 0x" << std::hex << (int)byte << "\n"; 
                 break;
             default:
                 memory[index] = byte;

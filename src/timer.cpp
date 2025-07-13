@@ -34,6 +34,7 @@ void timer::tick(int cycles)
 
     MMU.setDiv_Counter(div_counter);
 
+    // printTimerDebug();
 
     uint8_t TAC = MMU.readMem(REG_TAC);
     bool enabled = TAC & 0x4; // bit 2 reads enable
@@ -59,18 +60,13 @@ void timer::tick(int cycles)
         
         tima_counter += cycles;
 
-        //printTimerDebug(cycles);
-
         while(tima_counter >= TCycles){ // use while loop apporach if tima_counter overflows multiple times over
             uint8_t TIMA = MMU.readMem(REG_TIMA);
             tima_counter -= TCycles; 
             if(TIMA == 0xFF){
                 MMU.writeMem(MMU.readMem(REG_TMA), REG_TIMA);
                 uint8_t IF = MMU.readMem(0xFF0F);
-                
-                //std::cout << "TIMA Overflow, IF: " << std::bitset<8>(IF) << "\n";
-                //std::cout << "IE: " << std::bitset<8>(MMU.readMem(0xFFFF)) << "\n";
-
+                //std::cout << "TIMA Overflow, IF: " << std::bitset<8>(IF) << '\n';
                 MMU.writeMem(IF | 0x4, 0xFF0F); // set timer interrupt flag
             } else{
                 MMU.writeMem(TIMA + 1, REG_TIMA);
@@ -85,7 +81,7 @@ void timer::stopCall()
     stopped = true;
 }
 
-void timer::printTimerDebug(int cycles)
+void timer::printTimerDebug()
 {
     uint8_t DIV = div_counter >> 8;
     uint8_t TIMA = MMU.readMem(REG_TIMA);
@@ -93,8 +89,6 @@ void timer::printTimerDebug(int cycles)
     uint8_t TAC = MMU.readMem(REG_TAC);
     uint8_t IF = MMU.readMem(0xFF0F);
 
-    std::cout << "=== Timer Debug ===\n";
-    std::cout << "Cycles passed: " << cycles << "\n";
     std::cout << "DIV:  0x" << std::hex << +DIV
               << " (raw counter: " << std::dec << div_counter << ")\n";
     std::cout << "TIMA: 0x" << std::hex << +TIMA << "\n";
@@ -102,7 +96,6 @@ void timer::printTimerDebug(int cycles)
     std::cout << "TAC:  0x" << std::hex << +TAC
               << " (enabled: " << ((TAC & 0x04) ? "yes" : "no")
               << ", clock: " << (TAC & 0x03) << ")\n";
-    std::cout << "IF:   0x" << std::hex << +IF << "\n";
-    std::cout << "tima_counter: " << std::dec << (int)tima_counter << "\n";
-    std::cout << "===================\n";
+
+
 }

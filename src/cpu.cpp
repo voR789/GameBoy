@@ -10,6 +10,7 @@
 #include "ppu.h"
 #include "timer.h"
 #include <iomanip>
+#include <bitset>
 
 using std::string, std::memset, std::ifstream, std::cerr;
 
@@ -2704,6 +2705,7 @@ int cpu::execute()
         }
         case (0x3):
             IME = false;
+            std::cout << "IME TURNED OFF BY DI" << '\n';
             return 1;
         case (0x4):
             return 0;
@@ -2754,6 +2756,7 @@ int cpu::execute()
             return 4;
         case (0xB):
             // set IME, delayed by one instruction cycle
+            std::cout << "EI_Counter SET TO 1" << '\n';
             EI_COUNTER = 1;
             return 1;
         case (0xC):
@@ -4711,9 +4714,6 @@ int cpu::handleInterrupts()
     int bit;
     uint8_t address;
     // 0001 1111
-    if(pending != 0){
-        halt = false;
-    }
 
     if (IME && (pending != 0))
     {
@@ -4731,7 +4731,7 @@ int cpu::handleInterrupts()
         {
             bit = 2;
             address = 0x50;
-            std::cout << "[Interrupt] TIMER serviced at PC: 0x" << std::hex << pc << "\n";
+            mode = true;
         }
         else if (pending & 0x8)
         {
@@ -4773,6 +4773,7 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
     IME = false;
     stop = false;
     halt = false;
+    mode = false;
 
     // test rom fake boot rom
     registers[0] = 0x01B0;
@@ -4791,16 +4792,31 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
 int cpu::step()
 {
     // TODO: handle stop and halt
-
+    //if(mode)
+        //std::cin.get();
+    if (halt)
+    {
+        if (MMU.readMem(0xFFFF) & MMU.readMem(0xFF0F))
+        {
+            halt = false;
+        }
+        else
+        {
+            if (EI_COUNTER > 0)
+            {
+                EI_COUNTER--;
+                if (EI_COUNTER == 0)
+                {
+                    IME = true;
+                }
+            }
+            return 1;
+        }
+    }
     fetchOpcode();
     cycles += executeOpcode();
 
-    // Debug Step
-    if (pc >= 0xC000)
-    {
-        // std::cout << "PC: 0x" << std::hex << pc << " Opcode: 0x" << std::hex << (int)opcode << " imm 2 bytes: 0x" << std::hex << (int)MMU.readMem(pc) << ", 0x" << std::hex << (int)MMU.readMem(pc+1) << " Z val:" << getFlag('Z') << std::endl;
-        //std::cin.get();
-    }
+
     
     if (EI_COUNTER > 0)
     {
@@ -4810,6 +4826,7 @@ int cpu::step()
             IME = true;
         }
     }
+    
     // Interrupts - run "in between" instruction cycles, and if triggered, run a CALL to a predetermined handling set
     cycles += handleInterrupts();
 
