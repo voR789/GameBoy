@@ -6,8 +6,6 @@
 class timer{
     private:
         mmu& MMU;
-        uint16_t div_counter;
-        uint8_t tima_counter;
         bool stopped;
         
     public:

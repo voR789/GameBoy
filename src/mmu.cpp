@@ -10,7 +10,7 @@
 #define REG_TMA  0xFF06
 #define REG_TAC  0xFF07
 
-mmu::mmu():divReset(false){
+mmu::mmu(): div_counter(0){
     clearMem();
 }
 
@@ -18,18 +18,13 @@ void mmu::clearMem(){
     memset(memory, 0, sizeof(memory));
 }
 
-bool mmu::getDivReset(){ 
-    div_counter = 0;
-    return divReset;
+// DIV logic
+void mmu::addDiv_Counter(int cycles){
+    div_counter += cycles;
 }
 
-void mmu::clearDivReset(){
-    div_counter = 0;
-    divReset = true;
-}
-
-void mmu::setDiv_Counter(uint16_t n){
-    div_counter = n;
+uint16_t mmu::getDiv_Counter(){
+    return div_counter;
 }
 
 uint8_t mmu::readMem(int index){
@@ -39,15 +34,15 @@ uint8_t mmu::readMem(int index){
             case 0xFF00: return 0xCF;        // JOYP (no buttons pressed)
             case 0xFF01: return memory[index]; // SB
             case 0xFF02: return memory[index]; // SC
-            case 0xFF04: return div_counter >> 8;         // DIV
-            case 0xFF05: return memory[index];         // TIMA
-            case 0xFF06: return memory[index];         // TMA
-            case 0xFF07: return memory[index];         // TAC
+            case 0xFF04: return div_counter >> 8; // DIV
+            case 0xFF05: return memory[index]; // TIMA
+            case 0xFF06: return memory[index]; // TMA
+            case 0xFF07: return memory[index]; // TAC
             case 0xFF0F: return memory[index]; // IF
-            case 0xFF40: return 0x91;         // LCDC
-            case 0xFF41: return 0x85;         // STAT
-            case 0xFF44: return 0x00;         // LY
-            case 0xFF47: return 0xFC;         // BGP
+            case 0xFF40: return 0x91; // LCDC
+            case 0xFF41: return 0x85; // STAT
+            case 0xFF44: return 0x00; // LY
+            case 0xFF47: return 0xFC; // BGP
             default: return memory[index];
         }
     } 
@@ -90,7 +85,6 @@ void mmu::writeMem(uint8_t byte, int index) {
                 break;
             case 0xFF04:
                 div_counter = 0;
-                divReset = true; // sync timer div and mmu div
                 break;
             case 0xFF07:
                 memory[index] = byte;
