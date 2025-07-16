@@ -10,7 +10,7 @@
 #define REG_TMA  0xFF06
 #define REG_TAC  0xFF07
 
-mmu::mmu(): div_counter(0){
+mmu::mmu(): divCounter(0){
     clearMem();
 }
 
@@ -19,12 +19,12 @@ void mmu::clearMem(){
 }
 
 // DIV logic
-void mmu::addDiv_Counter(int cycles){
-    div_counter += cycles;
+void mmu::addDivCounter(int cycles){
+    divCounter += cycles;
 }
 
-uint16_t mmu::getDiv_Counter(){
-    return div_counter;
+uint16_t mmu::getDivCounter(){
+    return divCounter;
 }
 
 uint8_t mmu::readMem(int index){
@@ -34,7 +34,7 @@ uint8_t mmu::readMem(int index){
             case 0xFF00: return 0xCF;        // JOYP (no buttons pressed)
             case 0xFF01: return memory[index]; // SB
             case 0xFF02: return memory[index]; // SC
-            case 0xFF04: return div_counter >> 8; // DIV
+            case 0xFF04: return divCounter >> 8; // DIV
             case 0xFF05: return memory[index]; // TIMA
             case 0xFF06: return memory[index]; // TMA
             case 0xFF07: return memory[index]; // TAC
@@ -84,7 +84,7 @@ void mmu::writeMem(uint8_t byte, int index) {
                 }
                 break;
             case 0xFF04:
-                div_counter = 0;
+                divCounter = 0;
                 break;
             case 0xFF07:
                 memory[index] = byte;

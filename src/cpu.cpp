@@ -2537,8 +2537,6 @@ int cpu::execute()
             uint8_t lower = popStack();
             uint8_t upper = popStack();
             pc = (upper << 8) | lower;
-            std::cout << "[CPU] Executing RETI at PC: 0x" << std::hex << pc << "\n";
-
             return 4;
         }
         case (0xA):
@@ -2705,7 +2703,6 @@ int cpu::execute()
         }
         case (0x3):
             IME = false;
-            std::cout << "IME TURNED OFF BY DI" << '\n';
             return 1;
         case (0x4):
             return 0;
@@ -2756,7 +2753,6 @@ int cpu::execute()
             return 4;
         case (0xB):
             // set IME, delayed by one instruction cycle
-            std::cout << "EI_Counter SET TO 1" << '\n';
             EI_COUNTER = 1;
             return 1;
         case (0xC):
@@ -4752,7 +4748,8 @@ int cpu::handleInterrupts()
         storePC();
         MMU.writeMem(MMU.readMem(0xFF0F) & ~(0x1 << bit),0xFF0F);
         pc = address;
-        return 20;
+        return 5;
+        
     }
     return 0;
 }
@@ -4791,6 +4788,7 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
 // Game loop
 int cpu::step()
 {
+    cycles = 0;
     // TODO: handle stop and halt
     //if(mode)
         //std::cin.get();
@@ -4816,8 +4814,6 @@ int cpu::step()
     fetchOpcode();
     cycles += executeOpcode();
 
-
-    
     if (EI_COUNTER > 0)
     {
         EI_COUNTER--;

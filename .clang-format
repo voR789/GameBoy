@@ -1,0 +1,29 @@
+BasedOnStyle: Google
+IndentWidth: 4
+UseTab: Never
+
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+
+BraceWrapping:
+  AfterControlStatement: false
+  AfterFunction: false
+  AfterEnum: false
+  AfterStruct: false
+  AfterClass: false
+  AfterNamespace: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+ColumnLimit: 120
+
+SpacesInParentheses: false
+SpaceBeforeParens: ControlStatements
+
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignTrailingComments: true
+
+BreakBeforeBraces: Attach
