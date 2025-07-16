@@ -1744,6 +1744,8 @@ int cpu::execute()
         case (0x6):
         {
             /*TODO: HALT*/
+            std::cout << "HALT CALLED" << std::endl;
+            std::cin.get();
             halt = true;
             return 4;
         }

@@ -30,7 +30,6 @@ void timer::tick(int cycles) {
     uint8_t TAC     = MMU.readMem(REG_TAC);
     bool    enabled = TAC & 0x4;  // bit 2 reads enable
     if (enabled) {
-        //printTimerDebug();
         totalCycles += cycles;
         int clockSelect = TAC & 0x3;  // isolate last 2 bits of TAC
         int bit;
@@ -64,7 +63,6 @@ void timer::tick(int cycles) {
             if (oldBit == 1 && newBit == 0) {
                 uint8_t TIMA = MMU.readMem(REG_TIMA);
                 if (TIMA == 0xFF) {
-                    //std::cin.get();
                     uint8_t TMA = MMU.readMem(REG_TMA);
                     MMU.writeMem(TMA, REG_TIMA);
                     uint8_t IF = MMU.readMem(0xFF0F);
