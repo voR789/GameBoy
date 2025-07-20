@@ -21,12 +21,6 @@ void timer::tick(int cycles) {
     if (stopped) {
         return;
     }
-
-    // Part of DIV logic lives in memory
-    uint16_t oldDiv = MMU.getDivCounter();
-    MMU.addDivCounter(cycles);
-    uint16_t newDiv = MMU.getDivCounter();
-
     uint8_t TAC     = MMU.readMem(REG_TAC);
     bool    enabled = TAC & 0x4;  // bit 2 reads enable
     if (enabled) {

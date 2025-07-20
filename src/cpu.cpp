@@ -1743,9 +1743,6 @@ int cpu::execute()
         }
         case (0x6):
         {
-            /*TODO: HALT*/
-            std::cout << "HALT CALLED" << std::endl;
-            std::cin.get();
             halt = true;
             return 4;
         }
@@ -4729,7 +4726,6 @@ int cpu::handleInterrupts()
         {
             bit = 2;
             address = 0x50;
-            mode = true;
         }
         else if (pending & 0x8)
         {
@@ -4772,7 +4768,7 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
     IME = false;
     stop = false;
     halt = false;
-    mode = false;
+    haltBugFlag = false;
 
     // test rom fake boot rom
     registers[0] = 0x01B0;
@@ -4791,17 +4787,22 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
 int cpu::step()
 {
     cycles = 0;
-    // TODO: handle stop and halt
-    //if(mode)
-        //std::cin.get();
+
+    // Halt Logic
     if (halt)
     {
         if (MMU.readMem(0xFFFF) & MMU.readMem(0xFF0F))
         {
             halt = false;
+            if(IME){
+                cycles += handleInterrupts();
+            } else{ // HALT BUG
+                haltBugFlag = true;
+            }
         }
         else
         {
+            // Still handle EI for edge case
             if (EI_COUNTER > 0)
             {
                 EI_COUNTER--;
@@ -4810,12 +4811,19 @@ int cpu::step()
                     IME = true;
                 }
             }
+            // Timer still increments
             return 1;
         }
     }
-    fetchOpcode();
-    cycles += executeOpcode();
 
+    fetchOpcode();
+    if(haltBugFlag){
+        pc--;
+        haltBugFlag = false;
+    }
+    cycles += executeOpcode();
+    
+    // Delayed EI Handler
     if (EI_COUNTER > 0)
     {
         EI_COUNTER--;
