@@ -9,7 +9,7 @@ int main(){
     timer TIMER(MMU);
     cpu CPU(MMU, PPU, TIMER);
     // MMU.loadGame("tests/01-special.gb"); // - passed
-    MMU.loadGame("tests/02-interrupts.gb");
+    // MMU.loadGame("tests/02-interrupts.gb");
     // MMU.loadGame("tests/03-op sp,hl.gb"); // - passed
     // MMU.loadGame("tests/04-op r,imm.gb"); // - passed
     // MMU.loadGame("tests/05-op rp.gb"); // - passed
