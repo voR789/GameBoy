@@ -1,114 +1,335 @@
 #include "mmu.h"
+
 #include <cstdint>
-#include <iostream>
-#include <fstream>
-#include <vector>
 #include <cstring>
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
 // Timer registers are at:
-#define REG_DIV  0xFF04
+#define REG_DIV 0xFF04
 #define REG_TIMA 0xFF05
-#define REG_TMA  0xFF06
-#define REG_TAC  0xFF07
+#define REG_TMA 0xFF06
+#define REG_TAC 0xFF07
 
-mmu::mmu(): divCounter(0){
-    clearMem();
-}
+mmu::mmu() : divCounter(0) { clearMem(); }
 
-void mmu::clearMem(){
-    memset(memory, 0, sizeof(memory));
+void mmu::clearMem() {
+    memset(ROM_0, 0, sizeof(ROM_0));
+    memset(SWITCH_ROM, 0, sizeof(SWITCH_ROM));
+    memset(VRAM, 0, sizeof(VRAM));
+    memset(ERAM, 0, sizeof(ERAM));
+    memset(WRAM, 0, sizeof(WRAM));
+    memset(ECHO_RAM, 0, sizeof(ECHO_RAM));
+    memset(OAM, 0, sizeof(OAM));
+    memset(HRAM, 0, sizeof(HRAM));
+    IE = 0;
 }
 
 // DIV logic
-void mmu::addDivCounter(int cycles){
-    divCounter += cycles;
-}
+void mmu::addDivCounter(int cycles) { divCounter += cycles; }
 
-uint16_t mmu::getDivCounter(){
-    return divCounter;
-}
+uint16_t mmu::getDivCounter() { return divCounter; }
 
-uint8_t mmu::readMem(int index){
-    // I/O Registers
-    if (index >= 0xFF00 && index <= 0xFF7F) {
-        switch (index) {
-            case 0xFF00: return 0xCF;        // JOYP (no buttons pressed)
-            case 0xFF01: return memory[index]; // SB
-            case 0xFF02: return memory[index]; // SC
-            case 0xFF04: return divCounter >> 8; // DIV
-            case 0xFF05: return memory[index]; // TIMA
-            case 0xFF06: return memory[index]; // TMA
-            case 0xFF07: return memory[index]; // TAC
-            case 0xFF0F: return memory[index]; // IF
-            case 0xFF40: return 0x91; // LCDC
-            case 0xFF41: return 0x85; // STAT
-            case 0xFF44: return 0x00; // LY
-            case 0xFF47: return 0xFC; // BGP
-            default: return memory[index];
+uint8_t mmu::readMem(uint16_t index) {
+    if (0x00 <= index <= 0x7FFF) {
+        handleROMRead(index);
+    }
+
+    if (index <= 0x9FFF) {
+        return VRAM[index - 0x8000];  // Video RAM
+    }
+
+    if (index <= 0xBFFF) {
+        // MBC RAM
+        if (MBC_REG[0]) {
+            return handleRAMRead(index);
+        } else {
+            return 0xFF;
         }
-    } 
-
-    // Echo RAM
-    if (index >= 0xE000 && index <= 0xFDFF) {
-        return memory[index - 0x2000]; // Mirror of 0xC000–0xDDFF
     }
 
-    return memory[index];    
+    if (index <= 0xDFFF) {
+        return WRAM[index - 0xC000];  // Work RAM
+    }
+
+    if (index <= 0xFDFF) {
+        return WRAM[index - 0xE000];  // Echo RAM - Mirrors WRAM
+    }
+
+    if (index <= 0xFE9F) {
+        return OAM[index - 0xFE00];  // Object Attribute Memory
+    }
+
+    if (index <= 0xFEFF) {
+        return 0;
+        // throw std::runtime_error("Read to unusable memory 0xFEA0 - 0xFFEF"); // Unusable Memory
+    }
+
+    if (index <= 0xFF7F) {
+        switch (index) {  // I/O Registers
+            case 0xFF00:
+                return 0xCF;  // JOYP (no buttons pressed)
+            case 0xFF01:
+                return IO_REGISTERS[index - 0xFF00];  // SB (Serial Transfer Data)
+            case 0xFF02:
+                return IO_REGISTERS[index - 0xFF00];  // SC (Serial Transfer Control)
+            case 0xFF04:
+                return divCounter >> 8;  // DIV (Counts at 16384 Hz)
+            case 0xFF05:
+                return IO_REGISTERS[index - 0xFF00];  // TIMA (Timer)
+            case 0xFF06:
+                return IO_REGISTERS[index - 0xFF00];  // TMA (Timer reset value)
+            case 0xFF07:
+                return IO_REGISTERS[index - 0xFF00];  // TAC (Controls Timer)
+            case 0xFF0F:
+                return IO_REGISTERS[index - 0xFF00];  // IF (Interrupt Flag)
+            // cases 0xFF10 - FF3F -> audio (not handled)
+            case 0xFF40:
+                return 0x91;  // LCD Control
+            case 0xFF41:
+                return 0x85;  // STAT
+            case 0xFF44:
+                return 0x00;  // LY
+            case 0xFF47:
+                return 0xFC;  // BGP
+            case 0xFF50:
+                return IO_REGISTERS[index - 0xFF00];  // Boot ROM mapping control
+            default:
+                return IO_REGISTERS[index - 0xFF00];  // Stubbed are the CGB registers
+        }                                             // TODO: LCD, Boot ROM Mapping
+    }
+
+    if (index <= 0xFFFE) {
+        return HRAM[index - 0xFF80];
+    }
+
+    if (index == 0xFFFF) {
+        return IE;
+    }
+
+    return 0;
 }
-void mmu::writeMem(uint8_t byte, int index) {
-    
-    if(index <=  0x7FFF){
-        return;
-    }
-    // Echo RAM
-    if (index >= 0xE000 && index <= 0xFDFF) {
-        memory[index - 0x2000] = byte; // Write to mirror
-        return;
+
+void mmu::writeMem(uint8_t byte, uint16_t index) {
+    if (index <= 0x7FFF) {
+        // writes to this area are not allowed traditionally, instead used as writes to MBC registers
+        write_MBC_REG(byte, index);
     }
 
-    // Unusable memory area
-    if (index >= 0xFEA0 && index <= 0xFEFF) {
-        return; // Not usable
+    if (index <= 0x9FFF) {
+        VRAM[index - 0x8000] = byte;
     }
 
-    // I/O Registers
-    if (index >= 0xFF00 && index <= 0xFF7F) {
-        switch (index) {
-            case 0xFF01: // SB
-                memory[index] = byte;
+    if (index <= 0xBFFF) {
+        handleRAMWrite(byte, index); 
+    }
+
+    if (index <= 0xDFFF) {
+        WRAM[index - 0xC000] = byte;
+    }
+
+    if (index <= 0xFDFF) {
+        WRAM[index - 0xE000] = byte;  // Write to mirror
+    }
+
+    if (index <= 0xFE9F) {
+        OAM[index - 0xFE00] = byte;
+    }
+
+    if (index <= 0xFEFF) {
+        return;
+        // throw std::runtime_error("Write to unusable memory 0xFEA0 - 0xFFEF"); // Unusable Memory
+    }
+
+    if (index <= 0xFF7F) {
+        switch (index) {  // I/O Registers
+            case 0xFF01:  // SB (Serial Output Data)
+                IO_REGISTERS[index - 0xFF00] = byte;
                 break;
-            case 0xFF02: // SC
-                memory[index] = byte;
+            case 0xFF02:  // SC (Serial Output Enable) - Actual wire functionality stubbed
+                IO_REGISTERS[index - 0xFF00] = byte;
                 if (byte == 0x81) {
-                    std::cout << "" << static_cast<char>(memory[0xFF01]);
+                    std::cout << "" << static_cast<char>(IO_REGISTERS[0xFF01]);
                     std::cout.flush();
                 }
                 break;
             case 0xFF04:
-                divCounter = 0;
+                divCounter = 0;  // Represents DIV or 0xFF04
                 break;
+            case 0xFF05:
+                IO_REGISTERS[index - 0xFF00] = byte;  // TIMA
+            case 0xFF06:
+                IO_REGISTERS[index - 0xFF00] = byte;  // TMA (Timer Overflow Value)
             case 0xFF07:
-                memory[index] = byte;
-                break;   
+                IO_REGISTERS[index - 0xFF00] =
+                    (byte & 0x07);  // TAC (Selects timer speed off bits) -> mask out unused bits
+                break;
             case 0xFF0F:
-                memory[index] = byte;
-                // std::cout << "[MMU] IF written: 0x" << std::hex << (int)byte << "\n"; 
+                IO_REGISTERS[index - 0xFF00] = byte;
+                // std::cout << "[MMU] IF written: 0x" << std::hex << (int)byte << "\n";
                 break;
             default:
-                memory[index] = byte;
+                IO_REGISTERS[index - 0xFF00] = byte;  // Stubbed audio,
                 break;
         }
         return;
+    }  // TODO: LCD, Boot ROM Mapping
+
+    if (index <= 0xFFFE) {
+        HRAM[index - 0xFF80] = byte;
     }
 
-    // --- Normal memory write ---
-    memory[index] = byte;
+    if (index == 0xFFFF) {
+        IE = byte & 0x1F;  // mask out unused bytes
+    }
 }
 
+void mmu::loadGame(const std::string& filename) {  // Initialize MBC
+    std::ifstream rom(filename, std::ios::binary);
+    if (!rom) {
+        throw std::runtime_error("Failed to open ROM: " + filename);
+    }
 
-void mmu::loadGame(const std::string& filename){
-    std::ifstream rom(filename,std::ios::binary);
-    std::vector<char> data((std::istreambuf_iterator<char>(rom)), std::istreambuf_iterator<char>()); // cart  vector
-    for(int i = 0x0; i < data.size() && i < 0x8000; i++){
-        memory[i] = data[i];
+    // Initialize ROM/MBC
+    ROM      = std::vector<uint8_t>((std::istreambuf_iterator<char>(rom)), {});  // ROM vector
+    cartType = ROM.at(0x147);
+    romSize  = ROM.at(0x0148);
+    ramSize  = ROM.at(0x149);
+    write_MBC_REG(0x0, 0x0000);
+    write_MBC_REG(0x0, 0x2000);
+    write_MBC_REG(0x0, 0x4000);
+    write_MBC_REG(0x0, 0x6000);
+
+    largeBankMode = false;
+    switch (romSize) {
+        case (0x00):
+            mask = 0x1;
+            break;  // only 1 bit needed for 32 Kib cart, etc...
+        case (0x01):
+            mask = 0x3;
+            break;
+        case (0x02):
+            mask = 0x7;
+            break;
+        case (0x03):
+            mask = 0x0F;
+            break;
+        case (0x04):
+            mask = 0x1F;
+            break;  // 5 bit normal pull for 512 Kib and larger
+        default: {  // Larger cart (2 additional bit) logic AND MODE 0
+            mask          = 0x1F;
+            largeBankMode = true;
+            break;
+        }
+    }
+
+    switch (ramSize) {
+        case(0x0):{
+            SRAM = std::vector<uint8_t>(0);
+            break;
+        }
+        case(0x1):{
+            SRAM = std::vector<uint8_t>(0);    
+            break;
+        }
+        case(0x2):{
+            SRAM = std::vector<uint8_t>(8192);
+            break;
+        }
+        case(0x3):{
+            SRAM = std::vector<uint8_t>(4*8192);
+            break;
+        }
+        case(0x4):{
+            SRAM = std::vector<uint8_t>(16*8192);
+            break;
+        }
+        case(0x5):{
+            SRAM = std::vector<uint8_t>(8*8192);
+            break;
+        }
+    }
+}
+
+uint8_t mmu::handleROMRead(uint16_t index) {
+    switch (cartType) {
+        case (0x00): {  // ROM ONLY
+            return ROM.at(index);
+        }
+        case (0x01): {                  // MBC1
+            int address;                // Convert from index into ROM address, based on MBC
+            if (MBC_REG[3] == 0) {      // banking mode 0
+                if (index <= 0x3FFF) {  // Lower Bank
+                    address = index;
+                } else {                         // Upper Bank
+                    address = (BANK * 0x4000) |  // 16 Kib banks (0x4000)
+                              (index - 0x4000);  // Every bank is individual, so we subtract 0x4000 to act at 0...
+                }
+            } else {  // banking mode 1
+                if (index <= 0x3FFF) {
+                    address = (MBC_REG[2] << 19) | index;
+                } else {
+                    address = (BANK * 0x4000) | (index - 0x4000);
+                }
+            }
+            return ROM.at(address);
+        }
+    }
+}
+
+uint8_t mmu::handleRAMRead(uint16_t index) {
+    int address;
+    if (MBC_REG[3] == 0) {  // Banking mode 0
+        address = index - 0xA000;
+    } else {                                      // Banking mode 1
+        address = (MBC_REG[2] * 0x2000) | (index - 0xA000);  // 8 Kib Banks
+    }
+    return SRAM.at(address);
+}
+
+void mmu::handleRAMWrite(uint8_t byte, uint16_t index){
+    int address;
+    if (MBC_REG[3] == 0) {  // Banking mode 0
+        address = index - 0xA000;
+    } else {                                      // Banking mode 1
+        address = (MBC_REG[2] * 0x2000) | (index - 0xA000);  // 8 Kib Banks
+    }
+    SRAM.at(address) = byte;
+}
+
+void mmu::write_MBC_REG(uint8_t byte, uint16_t address) {
+    if (0x0000 <= address and address <= 0x1FFF) {
+        // RAM Enable
+        if ((byte & 0xF) == 0xA) {
+            MBC_REG[0] = 0x1;  // Enabled
+        } else {
+            MBC_REG[0] = 0x0;  // Disabled
+        }
+    }
+
+    if (0x2000 <= address and address <= 0x3FFF) {
+        // ROM Bank Number
+        MBC_REG[1] = byte;
+        if ((MBC_REG[1] & 0x1F) == 0x0) {
+            MBC_REG[1] = 0x1;
+        }  // 0x0 Conversion
+
+        if (largeBankMode) {
+            BANK = (MBC_REG[1] & mask) + (MBC_REG[2] << 5) ;  // make occupy bits 5/6 for addition
+        } else {
+            BANK = MBC_REG[1] & mask;
+        }
+    }
+
+    if (0x4000 <= address and address <= 0x5FFF) {
+        // RAM Bank Number, or Upper ROM Bank Number
+        MBC_REG[2] = byte & 0x3;
+    }
+
+    if (0x6000 <= address and address <= 0x7FFF) {
+        // Banking Mode Select
+        MBC_REG[3] = byte & 0x1;
     }
 }
