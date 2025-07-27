@@ -44,7 +44,6 @@ class mmu{
         uint8_t handleRAMRead(uint16_t index);
         void handleRAMWrite(uint8_t byte, uint16_t index);
         void write_MBC_REG(uint8_t byte, uint16_t index);
-
 };
 
 #endif

@@ -96,39 +96,6 @@ void cpu::clearFlag(char flag)
 void cpu::fetchOpcode()
 {
     opcode = MMU.readMem(pc++);
-
-    // std::cout << "AFCDDEHL: " << (int)getUpper(registers[0]) << "    "<<(int)getLower(registers[0]) << "    "<<(int)getUpper(registers[1]) << "    "<<(int)getLower(registers[1]) << "    "<<(int)getUpper(registers[2]) << "    "<<(int)getLower(registers[2]) << "    "<<(int)getUpper(registers[3]) << "    "<<(int)getLower(registers[3]) << std::endl;
-    /*
-        uint16_t currentPC = pc;
-        opcode = MMU.readMem(pc++);
-
-
-        // Get immediate values
-        uint8_t imm8_1 = MMU.readMem(pc);
-        uint8_t imm8_2 = MMU.readMem(pc + 1);
-
-        // Logging
-        static std::ofstream trace("trace_log.txt", std::ios::app); // keeps file open between calls
-
-        trace << std::hex << std::uppercase << std::setfill('0');
-        trace << "PC: 0x" << std::setw(4) << currentPC
-              << "  OP: 0x" << std::setw(2) << (int)opcode
-              << "  IMM: [0x" << std::setw(2) << (int)imm8_1
-              << " 0x" << std::setw(2) << (int)imm8_2 << "]  ";
-
-        trace << "AF: 0x" << std::setw(4) << registers[0]
-              << " BC: 0x" << std::setw(4) << registers[1]
-              << " DE: 0x" << std::setw(4) << registers[2]
-              << " HL: 0x" << std::setw(4) << registers[3]
-              << " SP: 0x" << std::setw(4) << sp;
-
-        trace << "  FLAGS [Z=" << getFlag('Z')
-              << " N=" << getFlag('N')
-              << " H=" << getFlag('H')
-              << " C=" << getFlag('C') << "]";
-
-        trace << std::endl;
-        */
 }
 
 uint8_t cpu::fetchNextByte()
