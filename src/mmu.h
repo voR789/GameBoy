@@ -10,9 +10,9 @@ class mmu{
         uint8_t cartType;
         uint8_t romSize;
         uint8_t ramSize;
-        uint8_t mask;
+        uint16_t mask;
         bool largeBankMode;
-        uint8_t BANK;
+        uint16_t BANK;
         uint8_t MBC_REG[4];
         std::vector<uint8_t> SRAM;
         // RAM Enable, ROM BANK Number, RAM Bank Number or ROM BANK Number (Upper), Banking Mode

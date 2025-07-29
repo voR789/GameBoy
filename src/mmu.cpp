@@ -261,6 +261,61 @@ void mmu::loadGame(const std::string& filename) {  // Initialize MBC
     } else if (cartType <= 0x6) {
         mask = 0xF;
         SRAM = std::vector<uint8_t>(512);
+    } else if (cartType <= 0x9) {
+        mask = 0xFF;  // stub val
+        SRAM = std::vector<uint8_t>(8192);
+    } else if (cartType <= 0x13) {  // MBC 3
+        mask = 0x7F;
+        switch (ramSize) {
+            case (0x0): {
+                SRAM = std::vector<uint8_t>(0);
+                break;
+            }
+            case (0x1): {
+                SRAM = std::vector<uint8_t>(0);
+                break;
+            }
+            case (0x2): {
+                SRAM = std::vector<uint8_t>(8192);
+                break;
+            }
+            case (0x3): {
+                SRAM = std::vector<uint8_t>(4 * 8192);
+                break;
+            }
+            case (0x4): {
+                SRAM = std::vector<uint8_t>(16 * 8192);
+                break;
+            }
+            case (0x5): {
+                SRAM = std::vector<uint8_t>(8 * 8192);
+                break;
+            }
+        }
+    } else if (cartType <= 0x1E){ // MBC5
+        mask = 0x1FF;
+        switch (ramSize) {
+            case (0x0): {
+                SRAM = std::vector<uint8_t>(0);
+                break;
+            }
+            case (0x1): {
+                SRAM = std::vector<uint8_t>(0);
+                break;
+            }
+            case (0x2): {
+                SRAM = std::vector<uint8_t>(8192);
+                break;
+            }
+            case (0x3): {
+                SRAM = std::vector<uint8_t>(4 * 8192);
+                break;
+            }
+            case (0x4): {
+                SRAM = std::vector<uint8_t>(16 * 8192);
+                break;
+            }
+        }
     }
 }
 
@@ -273,8 +328,6 @@ uint8_t mmu::handleROMRead(uint16_t index) {
             } else {                         // Upper Bank
                 address = (BANK * 0x4000) |  // 16 Kib banks (0x4000)
                           (index - 0x4000);  // Every bank is individual, so we subtract 0x4000 to act at 0...
-                // std::cerr << "ROM read out of bounds: " << (int)BANK << "  0x" << std::hex << (int)index << " " <<
-                // address << std::endl;
             }
         } else {  // banking mode 1
             if (index <= 0x3FFF) {
@@ -283,18 +336,42 @@ uint8_t mmu::handleROMRead(uint16_t index) {
                 address = (BANK * 0x4000) | (index - 0x4000);
             }
         }
-        if (address >= ROM.size()) {
-            throw std::runtime_error("ROM read out of bounds: ");
-        }
     } else if (cartType <= 0x6) {  // MBC2
-        int address;
         if (index <= 0x3FFF) {
             address = index;
         } else {
             address = (BANK * 0x4000) | (index - 0x4000);
         }
+    } else if (cartType <= 0x9) {
+        address = index;
+    } else if (cartType <= 0x0D) {
+        // Incomplete MMM01 - multigame compilation mode -> Stubbed as MBC1
+        if (MBC_REG[3] == 0) {     
+            if (index <= 0x3FFF) {  
+                address = index;
+            } else {                       
+                address = (BANK * 0x4000) | (index - 0x4000);  
+            }
+        } else {  // banking mode 1
+            if (index <= 0x3FFF) {
+                address = (MBC_REG[2] << 19) | index;
+            } else {
+                address = (BANK * 0x4000) | (index - 0x4000);
+            }
+        }
+    } else if (cartType <= 0x13) {  // MBC 3
+        if (index <= 0x3FFF) {
+            address = index;
+        } else {
+            address = (BANK * 0x4000) | (index - 0x4000);
+        }
+    } else if (cartType <= 0x1E){ // MBC5
+        if(address <= 0x3FFF){
+            address = index;
+        } else {
+            address = (BANK * 0x4000) | (index - 0x4000);
+        }
     }
-
     return ROM.at(address);
 }
 
@@ -312,6 +389,24 @@ uint8_t mmu::handleRAMRead(uint16_t index) {
         } else {  // Echo behavior
             address = (index - 0xA000) % 512;
         }
+    } else if (cartType <= 0x9) {
+        address = index - 0xA000;
+    } else if (cartType <= 0x0D) {
+        // Incomplete MMM01 - multigame compilation mode
+        if (MBC_REG[3] == 0) {  
+            address = index - 0xA000;
+        } else {                                                
+            address = (MBC_REG[2] * 0x2000) | (index - 0xA000); 
+        }
+    } else if (cartType <= 0x13) {  // MBC 3
+        if (MBC_REG[2] <= 0x03) {  // RAM Bank
+            address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
+        } else if (MBC_REG[2] >= 0x08 && MBC_REG[2] <= 0x0C) {  // RTC
+            // Stubbed
+            return 0x0;
+        } 
+    } else if (cartType <= 0x1E){ // MBC5
+        address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
     }
     return SRAM.at(address);
 }
@@ -331,6 +426,23 @@ void mmu::handleRAMWrite(uint8_t byte, uint16_t index) {
         } else {  // Echo behavior
             address = (index - 0xA000) % 512;
         }
+    } else if (cartType <= 0x9) {
+        address = index - 0xA000;
+    } else if (cartType <= 0x0D) {
+        if (MBC_REG[3] == 0) {  
+            address = index - 0xA000;
+        } else {                                                 
+            address = (MBC_REG[2] * 0x2000) | (index - 0xA000); 
+        }
+    } else if (cartType <= 0x13) {  // MBC 3
+        if (MBC_REG[2] <= 0x03) {
+            address          = (MBC_REG[2] * 0x2000) | (index - 0xA000);
+            SRAM.at(address) = byte;
+        } else if (MBC_REG[2] >= 0x08 && MBC_REG[2] <= 0x0C) {
+            // RTC register write stub
+        }
+    } else if (cartType <= 0x1E){ // MBC5
+        address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
     }
 
     SRAM.at(address) = byte;
@@ -388,6 +500,81 @@ void mmu::write_MBC_REG(uint8_t byte, uint16_t address) {
             }
         } else {
             throw std::runtime_error("Write to illegal address: MBC2");
+        }
+    } else if (cartType <= 0x0D) {
+        if (0x0000 <= address and address <= 0x1FFF) {
+            if ((byte & 0xF) == 0xA) {
+                MBC_REG[0] = 0x1;  
+            } else {
+                MBC_REG[0] = 0x0;  
+            }
+        }
+
+        if (0x2000 <= address and address <= 0x3FFF) {
+            // ROM Bank
+            MBC_REG[1] = byte;
+            if ((MBC_REG[1] & 0x1F) == 0x0) {
+                MBC_REG[1] |= 0x1;
+            }
+
+            if (largeBankMode) {
+                BANK = (MBC_REG[1] & mask) + (MBC_REG[2] << 5); 
+            } else {
+                BANK = MBC_REG[1] & mask;
+            }
+        }
+
+        if (0x4000 <= address and address <= 0x5FFF) {
+            // RAM Bank Number, or Upper ROM Bank Number
+            MBC_REG[2] = byte & 0x3;
+        }
+
+        if (0x6000 <= address and address <= 0x7FFF) {
+            // Banking Mode Select
+            MBC_REG[3] = byte & 0x1;
+        }
+    } else if (cartType <= 0x13) {  // MBC 3
+        if (0x0000 <= address and address <= 0x1FFF) { // RAM Enable
+            if ((byte & 0xF) == 0xA) {
+                MBC_REG[0] = 0x1;  // Enabled
+            } else {
+                MBC_REG[0] = 0x0;  // Disabled
+            }
+        }
+        if (0x2000 <= address and address <= 0x3FFF) {
+            MBC_REG[1] = byte;
+            if (MBC_REG[1] == 0x0) {
+                MBC_REG[1] |= 0x1;
+            }
+            BANK = MBC_REG[1] & mask;
+        }
+        if (0x4000 <= address and address <= 0x5FFF) {
+            MBC_REG[2] = byte;  // Controls RAM Bank or RTC Register
+        }
+        if (0x6000 <= address and address <= 0x7FFF) {
+            // Stubbed
+        }
+        if (0xA000 <= address and address <= 0xBFFF) {
+            // Stubbed
+        }
+    } else if (cartType <= 0x1E){ // MBC5
+        if (0x0000 <= address and address <= 0x1FFF) { // RAM Enable
+            if ((byte & 0xF) == 0xA) {
+                MBC_REG[0] = 0x1;  // Enabled
+            } else {
+                MBC_REG[0] = 0x0;  // Disabled
+            }
+        }
+        if (0x2000 <= address and address <= 0x3FFF) {
+            BANK = byte & mask;
+        }
+        if (0x4000 <= address and address <= 0x5FFF) {
+            BANK = (BANK | (byte << 8)) & mask;
+        }
+        if (0x6000 <= address and address <= 0x7FFF) {
+            if(byte <= 0x0F){
+                MBC_REG[2] = byte;
+            }
         }
     }
 }
