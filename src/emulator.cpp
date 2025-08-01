@@ -20,7 +20,10 @@ int main(){
     //MMU.loadGame("tests/10-bit ops.gb"); // - passed
     //MMU.loadGame("tests/11-op a,(hl).gb"); // - passed
     
-    MMU.loadGame("tests/cpu_instrs.gb"); // - passed!
+    //MMU.loadGame("tests/cpu_instrs.gb"); // - passed!
+    //MMU.loadGame("tests/instr_timing.gb"); // passed!
+    //MMU.loadGame("tests/halt_bug.gb"); // - do ppu first
+    MMU.loadGame("tests/interrupt_time.gb");
     int cycle;
     int counter = 70224;
 

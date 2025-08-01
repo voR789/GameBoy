@@ -718,6 +718,7 @@ void cpu::ldMem8(int address, uint8_t byte)
     }
     catch (const std::exception &e)
     {
+        std::cerr << std::hex << "Byte:" << (int)byte << " Address: " << (int)address << '\n' << e.what();
         throw std::runtime_error("ldMem8 Error");
     }
 }
@@ -1233,7 +1234,7 @@ int cpu::execute()
             }
             clearFlag('N');
             MMU.writeMem(data, registers[3]);
-            return 2;
+            return 3;
         }
         case (0x5):
         {
@@ -1257,7 +1258,7 @@ int cpu::execute()
             }
             setFlag('N');
             MMU.writeMem(data, registers[3]);
-            return 2;
+            return 3;
         }
         case (0x6):
         {
@@ -3014,7 +3015,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RLC(HL_data));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -3062,7 +3063,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RRC(HL_data));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -3119,7 +3120,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RL(HL_data));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -3167,7 +3168,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RR(HL_data));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -3224,7 +3225,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SLA(HL_data));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -3272,7 +3273,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SRA(HL_data));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -3329,7 +3330,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SWAP(HL_data));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -3377,7 +3378,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SRL(HL_data));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -3434,7 +3435,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 0);
-            return 2;
+            return 3;
         }
         case (0x7):
         {
@@ -3482,7 +3483,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 1);
-            return 2;
+            return 3;
         }
         case (0xF):
         {
@@ -3539,7 +3540,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 2);
-            return 2;
+            return 3;
         }
         case (0x7):
         {
@@ -3587,7 +3588,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 3);
-            return 2;
+            return 3;
         }
         case (0xF):
         {
@@ -3644,7 +3645,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 4);
-            return 2;
+            return 3;
         }
         case (0x7):
         {
@@ -3692,7 +3693,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 5);
-            return 2;
+            return 3;
         }
         case (0xF):
         {
@@ -3749,7 +3750,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 6);
-            return 2;
+            return 3;
         }
         case (0x7):
         {
@@ -3797,7 +3798,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             BIT_(HL_data, 7);
-            return 2;
+            return 3;
         }
         case (0xF):
         {
@@ -3854,7 +3855,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 0));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -3902,7 +3903,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 1));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -3959,7 +3960,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 2));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4007,7 +4008,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 3));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4064,7 +4065,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 4));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4112,7 +4113,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 5));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4169,7 +4170,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 6));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4217,7 +4218,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], RES_(HL_data, 7));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4275,7 +4276,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 0));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4323,7 +4324,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 1));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4380,7 +4381,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 2));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4428,7 +4429,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 3));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4485,7 +4486,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 4));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4533,7 +4534,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 5));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4590,7 +4591,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 6));
-            return 2;
+            return 4;
         }
         case (0x7):
         {
@@ -4638,7 +4639,7 @@ int cpu::executePrefixed()
         {
             uint8_t HL_data = MMU.readMem(registers[3]);
             ldMem8(registers[3], SET_(HL_data, 7));
-            return 2;
+            return 4;
         }
         case (0xF):
         {
@@ -4754,7 +4755,7 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
 int cpu::step()
 {
     cycles = 0;
-
+    
     // Halt Logic
     if (halt)
     {
@@ -4788,6 +4789,21 @@ int cpu::step()
         pc--;
         haltBugFlag = false;
     }
+    
+    // TODO: halt bug test - seems like i need to implement the PPU first 
+    /*
+    if(pc >= 0xC000 and getFlag('Z') == 1){
+        std::cin.get();
+    }
+    std::cout << std::hex << std::setfill('0');
+    std::cout << "[PC=0x" << std::setw(4) << pc << "] ";
+    std::cout << "imm16: 0x" << std::hex << (int)MMU.readMem(pc) << " 0x" << (int)MMU.readMem(pc + 1);
+    std::cout << " Opcode=0x" << std::setw(2) << static_cast<int>(opcode) << " | " << "A: " << std::hex << (int)getUpper(registers[0]) << " 0xFFFF: 0x" << (int)MMU.readMem(0xFFFF) << " [HL]: " << (int)MMU.readMem(registers[3]) << " add: 0x" << (int)MMU.readMem(0xC36F) << " IF: " << (int)MMU.readMem(0xFF0F);
+    std::cout << std::endl;
+    if(getFlag('Z') and pc >= 0xC000){
+        std::cin.get();
+    }
+    */
     cycles += executeOpcode();
     
     // Delayed EI Handler
@@ -4802,6 +4818,8 @@ int cpu::step()
     
     // Interrupts - run "in between" instruction cycles, and if triggered, run a CALL to a predetermined handling set
     cycles += handleInterrupts();
+
+
 
     return cycles;
 }

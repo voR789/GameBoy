@@ -23,7 +23,7 @@ void mmu::clearMem() {
     memset(ECHO_RAM, 0, sizeof(ECHO_RAM));
     memset(OAM, 0, sizeof(OAM));
     memset(HRAM, 0, sizeof(HRAM));
-    IE = 0;
+    IE = 0x20;
 }
 
 // DIV logic
@@ -115,28 +115,37 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
     if (index <= 0x7FFF) {
         // writes to this area are not allowed traditionally, instead used as writes to MBC registers
         write_MBC_REG(byte, index);
+        return;
     }
 
     if (index <= 0x9FFF) {
         VRAM[index - 0x8000] = byte;
+        return;
     }
 
     if (index <= 0xBFFF) {
         if (MBC_REG[0]) {
             handleRAMWrite(byte, index);
         }
+        return;
     }
 
     if (index <= 0xDFFF) {
+        if(byte == 0x76){
+            //c07d, 0xc08a. 0xc594,0xc682
+        }
         WRAM[index - 0xC000] = byte;
+        return;
     }
 
     if (index <= 0xFDFF) {
         WRAM[index - 0xE000] = byte;  // Write to mirror
+        return;
     }
 
     if (index <= 0xFE9F) {
         OAM[index - 0xFE00] = byte;
+        return;
     }
 
     if (index <= 0xFEFF) {
@@ -171,7 +180,6 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
                 break;
             case 0xFF0F:
                 IO_REGISTERS[index - 0xFF00] = byte;
-                // std::cout << "[MMU] IF written: 0x" << std::hex << (int)byte << "\n";
                 break;
             default:
                 IO_REGISTERS[index - 0xFF00] = byte;  // Stubbed audio,
@@ -182,10 +190,12 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
 
     if (index <= 0xFFFE) {
         HRAM[index - 0xFF80] = byte;
+        return;
     }
 
     if (index == 0xFFFF) {
         IE = byte;  // mask out unused bytes
+        return;
     }
 }
 
@@ -234,11 +244,11 @@ void mmu::loadGame(const std::string& filename) {  // Initialize MBC
 
         switch (ramSize) {
             case (0x0): {
-                SRAM = std::vector<uint8_t>(0);
+                SRAM = std::vector<uint8_t>(8192);
                 break;
             }
             case (0x1): {
-                SRAM = std::vector<uint8_t>(0);
+                SRAM = std::vector<uint8_t>(8192);
                 break;
             }
             case (0x2): {
@@ -321,6 +331,7 @@ void mmu::loadGame(const std::string& filename) {  // Initialize MBC
 
 uint8_t mmu::handleROMRead(uint16_t index) {
     int address;                    // Convert from index into ROM address, based on MBC
+    recalculateBank();
     if (cartType <= 0x3) {          // MBC1
         if (MBC_REG[3] == 0) {      // banking mode 0
             if (index <= 0x3FFF) {  // Lower Bank
@@ -331,7 +342,7 @@ uint8_t mmu::handleROMRead(uint16_t index) {
             }
         } else {  // banking mode 1
             if (index <= 0x3FFF) {
-                address = (MBC_REG[2] << 19) | index;
+                address = (BANK * 0x4000) | index;
             } else {
                 address = (BANK * 0x4000) | (index - 0x4000);
             }
@@ -377,6 +388,7 @@ uint8_t mmu::handleROMRead(uint16_t index) {
 
 uint8_t mmu::handleRAMRead(uint16_t index) {
     int address;
+    recalculateBank();
     if (cartType <= 0x3) {
         if (MBC_REG[3] == 0) {  // Banking mode 0
             address = index - 0xA000;
@@ -414,6 +426,7 @@ uint8_t mmu::handleRAMRead(uint16_t index) {
 // Add in battery and save functionality
 void mmu::handleRAMWrite(uint8_t byte, uint16_t index) {
     int address;
+    recalculateBank();
     if (cartType <= 0x3) {
         if (MBC_REG[3] == 0) {  // Banking mode 0
             address = index - 0xA000;
@@ -444,7 +457,6 @@ void mmu::handleRAMWrite(uint8_t byte, uint16_t index) {
     } else if (cartType <= 0x1E){ // MBC5
         address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
     }
-
     SRAM.at(address) = byte;
 }
 
@@ -577,4 +589,13 @@ void mmu::write_MBC_REG(uint8_t byte, uint16_t address) {
             }
         }
     }
+}
+
+void mmu::recalculateBank() {
+    if (largeBankMode) {
+        BANK = (MBC_REG[1] & mask) + (MBC_REG[2] << 5);
+    } else {
+        BANK = MBC_REG[1] & mask;
+    }
+    if ((BANK & 0x1F) == 0) BANK |= 0x1; // avoid bank 0
 }
