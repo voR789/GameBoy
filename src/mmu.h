@@ -3,6 +3,10 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+
+// Forward Declaration to avoid circular import issues
+class ppu;
+
 class mmu{
     private:
         // ROM
@@ -32,6 +36,9 @@ class mmu{
 
         // Timer
         uint16_t divCounter;
+
+        // PPU Pointer
+        ppu* PPU;
     public:
         mmu();
         void clearMem();
@@ -45,6 +52,9 @@ class mmu{
         void handleRAMWrite(uint8_t byte, uint16_t index);
         void write_MBC_REG(uint8_t byte, uint16_t index);
         void recalculateBank();
+
+        // PPU mutual connection
+        void linkPPU(ppu* ppu_);
 };
 
 #endif

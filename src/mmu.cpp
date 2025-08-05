@@ -1,5 +1,5 @@
 #include "mmu.h"
-
+#include "ppu.h"
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -12,7 +12,7 @@
 #define REG_TMA 0xFF06
 #define REG_TAC 0xFF07
 
-mmu::mmu() : divCounter(0) { clearMem(); }
+mmu::mmu() : divCounter(0), PPU(nullptr) { clearMem(); }
 
 void mmu::clearMem() {
     memset(ROM_0, 0, sizeof(ROM_0));
@@ -26,7 +26,7 @@ void mmu::clearMem() {
     IE = 0x20;
 }
 
-// DIV logic
+// Timer logic
 void mmu::addDivCounter(int cycles) { divCounter += cycles; }
 
 uint16_t mmu::getDivCounter() { return divCounter; }
@@ -598,4 +598,8 @@ void mmu::recalculateBank() {
         BANK = MBC_REG[1] & mask;
     }
     if ((BANK & 0x1F) == 0) BANK |= 0x1; // avoid bank 0
+}
+
+void mmu::linkPPU(ppu* ppu_) {
+    PPU = ppu_;
 }

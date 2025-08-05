@@ -4,8 +4,9 @@
 #include "ppu.h"
 
 int main(){
+    // TODO: Verify power on starting vals when done
     mmu MMU;
-    ppu PPU;
+    ppu PPU(MMU);
     timer TIMER(MMU);
     cpu CPU(MMU, PPU, TIMER);
     //MMU.loadGame("tests/01-special.gb"); // - passed
