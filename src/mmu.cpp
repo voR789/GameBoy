@@ -407,7 +407,7 @@ uint8_t mmu::handleROMRead(uint16_t index) {
             }
         } else {  // banking mode 1
             if (index <= 0x3FFF) {
-                address = (BANK * 0x4000) | index;
+                address = ((MBC_REG[2] << 5) & 0x60) * 0x4000 | index;
             } else {
                 address = (BANK * 0x4000) | (index - 0x4000);
             }

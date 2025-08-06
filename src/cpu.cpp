@@ -3839,7 +3839,7 @@ int cpu::step() {
 
     if(stop){
         // TODO: add joystick wake up
-        return;
+        return 0;
     }
     // Halt Logic
     if (halt) {

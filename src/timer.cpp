@@ -22,9 +22,14 @@ timer::timer(mmu &MMU_REF) : MMU(MMU_REF) {
     TMA = 0;
     TAC = 0x0;
     clockBit = 0;
+    overflowPending = false;
+    overflowDelay = 0;
+    // Debug
+    totalCycles = 0;
 }
 
 void timer::tick() {
+    totalCycles++;
     divCounter++;
     if(TAC & 0x4){ // bit 2 = enabled
         // falling edge on clockBit -> set on TAC write
@@ -32,13 +37,23 @@ void timer::tick() {
         uint8_t newBit = (divCounter >> clockBit) & 0x1;
         if(oldBit == 1 && newBit == 0){
             if(TIMA == 0xFF){
-                TIMA = TMA;
-                setInterrupt();
+                overflowPending = true;
+                overflowDelay = 4;
             } else{
                 TIMA++;
             }
         }
     }
+
+    // Handle delayed TIMA reload
+    if (overflowPending) {
+        overflowDelay--;
+        if (overflowDelay == 0) {
+            TIMA = TMA;
+            setInterrupt();
+            overflowPending = false;
+        }
+}
 }
 
 int timer::setClockBit(){
@@ -47,11 +62,10 @@ int timer::setClockBit(){
     Because DIV increments at 16384 hz, we do that using an 8 bit counter (lower 2 nibbles of div_counter),
     and a 8 bit read (upper 2 nibbles). Therefore, any division or multiple of 16384 is adjusted using
     choosing the relevant bit relative to speed, and watching when it falls edge
-*/
+*/  
     switch(TAC & 0x3) { // bits 0/1 select clock speed
         case (0):
-            return 9; // 4096 hz
-                break;  
+            return 9; // 4096 hz 
         case (1):
             return 3; // 262144 hz
         case (2):
