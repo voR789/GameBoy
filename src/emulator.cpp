@@ -4,10 +4,10 @@
 #include "ppu.h"
 
 int main(){
-    // TODO: Verify power on starting vals when done
+    // TODO: Verify power on starting vals when done, add stopped logic
     mmu MMU;
-    ppu PPU(MMU);
     timer TIMER(MMU);
+    ppu PPU(MMU, TIMER);
     cpu CPU(MMU, PPU, TIMER);
     //MMU.loadGame("tests/01-special.gb"); // - passed
     //MMU.loadGame("tests/02-interrupts.gb");
@@ -25,20 +25,14 @@ int main(){
     //MMU.loadGame("tests/instr_timing.gb"); // passed!
     //MMU.loadGame("tests/halt_bug.gb"); // - do ppu first
     MMU.loadGame("tests/interrupt_time.gb");
-    int cycle;
-    int counter = 70224;
-
-    int stepper;
-    while(true) {
-        cycle = CPU.step();
-        TIMER.tick(cycle*4);
-        
-        
-        counter -= cycle;
-        if(counter <= 0){
-            CPU.triggerVBLankInterrupt();
-            counter += 70224;
-        } 
+    int MCycles;
+    bool emulating = true;
+    while(emulating) {
+        MCycles = CPU.step();
+        for(int i = 0; i < MCycles * 4; i++){
+            TIMER.tick();
+            // TODO: PPU.tick();
+        }
     } 
 
     return 0;

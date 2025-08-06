@@ -1,0 +1,16 @@
+TIMER
+void timer::printTimerDebug() {
+    uint8_t DIV  = MMU.getDivCounter();
+    uint8_t TIMA = MMU.readMem(REG_TIMA);
+    uint8_t TMA  = MMU.readMem(REG_TMA);
+    uint8_t TAC  = MMU.readMem(REG_TAC);
+    uint8_t IF   = MMU.readMem(0xFF0F);
+
+    std::cout << "Elapsed M - Cycles: " << std::dec << (int)totalCycles/4 << '\n';
+    std::cout << "IF: 0x" << std::hex << (int)IF << "\n";
+    std::cout << "DIV:  0x" << std::hex << +DIV << "\n";
+    std::cout << "TIMA: 0x" << std::hex << +TIMA << "\n";
+    std::cout << "TMA:  0x" << std::hex << +TMA << "\n";
+    std::cout << "TAC:  0x" << std::hex << +TAC << " (enabled: " << ((TAC & 0x04) ? "yes" : "no")
+              << ", clock: " << (TAC & 0x03) << ")\n";
+}

@@ -1,6 +1,7 @@
 #ifndef PPU_H
 #define PPU_H
 #include "mmu.h"
+#include "timer.h"
 #define REG_ACCESS(name)                        \
     uint8_t read##name() const { return name; }  \
     void write##name(uint8_t byte) { name = byte; }
@@ -8,6 +9,13 @@
 class ppu{
     private:
         mmu& MMU;
+        timer& TIMER;
+        enum mode {
+            HBlank = 0,
+            VBlank = 1,
+            OAM = 2,
+            Transfer = 3
+        };
         uint8_t LCDC;
         uint8_t STAT;
         uint8_t SCY;
@@ -21,7 +29,7 @@ class ppu{
         uint8_t WY;
         uint8_t WX;
     public:
-        ppu(mmu& mmu_ref);
+        ppu(mmu& mmu_ref, timer& timer_ref);
         // Registers with no special quirks
         // Using macro defined at top
         REG_ACCESS(SCY);
@@ -39,6 +47,6 @@ class ppu{
         uint8_t readSTAT();
         void writeSTAT(uint8_t byte);
         uint8_t readLY();
-        void writeDMA();
+        void writeDMA(uint8_t byte);
 };
 #endif

@@ -5,6 +5,7 @@
 #include <vector>
 
 // Forward Declaration to avoid circular import issues
+class timer;
 class ppu;
 
 class mmu{
@@ -35,15 +36,14 @@ class mmu{
         uint8_t IE;
 
         // Timer
-        uint16_t divCounter;
+        timer* TIMER;
 
         // PPU Pointer
         ppu* PPU;
+        bool dmaTransfer;
     public:
         mmu();
         void clearMem();
-        void addDivCounter(int cycles);
-        uint16_t getDivCounter();
         uint8_t readMem(uint16_t index);
         void writeMem(uint8_t byte, uint16_t address);       
         void loadGame(const std::string& filename);
@@ -53,8 +53,12 @@ class mmu{
         void write_MBC_REG(uint8_t byte, uint16_t index);
         void recalculateBank();
 
+        // TIMER mutual connection
+        void linkTIMER(timer* timer_);
+
         // PPU mutual connection
         void linkPPU(ppu* ppu_);
+        void startDMA(uint8_t byte);
 };
 
 #endif

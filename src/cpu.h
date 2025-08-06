@@ -55,14 +55,11 @@ class cpu{
         void xorA(uint8_t byte);
         void orA(uint8_t byte);
         void cpA(uint8_t byte);
-
         uint8_t popStack();
         void pushStack(uint8_t byte);
         void storePC();
-        
         void ldMem8(int address, uint8_t byte);
         void ldReg8(char reg, uint8_t byte);
-        
         // prefixed helpers
         uint8_t RLC(uint8_t byte); // rotate left, store bit in carry
         uint8_t RL(uint8_t byte); // rotate left, through carry
@@ -82,7 +79,6 @@ class cpu{
         int executePrefixed();
         int executeOpcode();
         int handleInterrupts();
-        void triggerVBLankInterrupt();
         
 };
 
