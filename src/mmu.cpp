@@ -1,7 +1,9 @@
 #include "mmu.h"
+#include "mbc.h"
 
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -17,8 +19,6 @@
 mmu::mmu() : PPU(nullptr), TIMER(nullptr) { clearMem(); }
 
 void mmu::clearMem() {
-    memset(ROM_0, 0, sizeof(ROM_0));
-    memset(SWITCH_ROM, 0, sizeof(SWITCH_ROM));
     memset(VRAM, 0, sizeof(VRAM));
     memset(ERAM, 0, sizeof(ERAM));
     memset(WRAM, 0, sizeof(WRAM));
@@ -276,7 +276,7 @@ void mmu::loadGame(const std::string& filename) {  // Initialize MBC
     romSize  = ROM.at(0x0148);
     ramSize  = ROM.at(0x149);
 
-    MBC_REG[0] = 0x0;
+    MBC_REG[0] = 0x0; 
     MBC_REG[1] = 0x1;
     MBC_REG[2] = 0x0;
     MBC_REG[3] = 0x0;
@@ -663,6 +663,74 @@ void mmu::recalculateBank() {
         BANK = MBC_REG[1] & mask;
     }
     if ((BANK & 0x1F) == 0) BANK |= 0x1;  // avoid bank 0
+}
+
+MBC1::MBC1(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram) 
+    : ROM(rom), SRAM(sram), ram_enable(0), rom_bank(1), ram_bank_or_upper_rom_bank(1), bank_mode(0) {}
+
+uint8_t MBC1::readROM(uint16_t addr) {
+    // Implement MBC1 ROM reading logic here
+
+}
+
+void MBC1::writeROM(uint8_t byte, uint16_t addr) {
+    // cartType = ROM.at(0x147);
+    // romSize  = ROM.at(0x0148);
+    // ramSize  = ROM.at(0x149);
+
+    // Writes to ROM affect reg
+    if (addr <= 0x1FFF) {
+            // RAM Enable
+            if ((byte & 0xF) == 0xA) {
+                ram_enable = 0x1;  // Enabled
+            } else {
+                ram_enable = 0x0;  // Disabled
+            }
+        }
+    else if (addr <= 0x3FFF) {
+            // ROM Bank
+            if((byte & 0x1F) == 0){
+                rom_bank = 0x1;
+            } else{
+                rom_bank = byte;
+            }
+
+            uint8_t romSize = ROM.at(0x0148);
+            uint8_t mask = static_cast<int>(pow(2,romSize+1)) - 1;
+            bool largeRom = false;
+            if(mask >= 0x1F){
+                mask = 0x1F; // Bank restricted to 5 bit
+                largeRom = true; // tell logic to use secondary bank
+            }
+            if (largeRom) {
+                rom_bank = (ram_bank_or_upper_rom_bank << 5) | (rom_bank & mask);
+            } else {
+                rom_bank = rom_bank & mask;
+            }
+        }
+    else if (addr <= 0x5FFF) {
+            // RAM Bank Number, or Upper ROM Bank Number
+            ram_bank_or_upper_rom_bank = byte & 0x3;
+        }
+    else if (addr <= 0x7FFF) {
+            // Banking Mode Select
+            bank_mode = byte & 0x1;
+        }
+}
+
+uint8_t MBC1::readRAM(uint16_t addr) {
+    // Implement RAM reading logic
+}
+
+void MBC1::writeRAM(uint8_t byte, uint16_t addr) {
+    // Implement RAM writing logic
+}
+
+void MBC1::reset() {
+    ram_enable = 0;
+    rom_bank = 1;
+    ram_bank_or_upper_rom_bank = 0;
+    bank_mode = 0;
 }
 
 void mmu::linkTIMER(timer* timer_) { TIMER = timer_; }

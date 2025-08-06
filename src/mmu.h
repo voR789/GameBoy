@@ -11,7 +11,7 @@ class ppu;
 class mmu{
     private:
         // ROM
-        std::vector<uint8_t> ROM;
+        const std::vector<uint8_t> ROM;
         uint8_t cartType;
         uint8_t romSize;
         uint8_t ramSize;
@@ -20,17 +20,13 @@ class mmu{
         uint16_t BANK;
         uint8_t MBC_REG[4];
         std::vector<uint8_t> SRAM;
-        // RAM Enable, ROM BANK Number, RAM Bank Number or ROM BANK Number (Upper), Banking Mode
-
+        
         // Memory Map
-        uint8_t ROM_0[16384];
-        uint8_t SWITCH_ROM[16384]; // Bankable
         uint8_t VRAM[8192];
         uint8_t ERAM[8192]; // Bankable
         uint8_t WRAM[8192];
         uint8_t ECHO_RAM[7680]; // Mirrors WRAM
         uint8_t OAM[160];
-        // uint8_t NAN[96] - unused memory
         uint8_t IO_REGISTERS[128];
         uint8_t HRAM[127];
         uint8_t IE;
