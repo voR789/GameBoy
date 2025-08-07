@@ -11,7 +11,7 @@ class ppu;
 class mmu{
     private:
         // ROM
-        const std::vector<uint8_t> ROM;
+        std::vector<uint8_t> ROM;
         uint8_t cartType;
         uint8_t romSize;
         uint8_t ramSize;
