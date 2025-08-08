@@ -4,33 +4,34 @@
     {
       "label": "Build Emulator",
       "type": "shell",
-      "command": "bash",
+      "command": "g++",
       "args": [
-        "-c",
-        "mkdir -p bin && /usr/bin/g++ -std=c++17 -g -Wall -Wextra -Isrc src/emulator.cpp src/cpu.cpp src/mmu.cpp src/ppu.cpp src/timer.cpp src/serial.cpp -o bin/GameBoy"
+        "-std=c++17",
+        "-g",
+        "src/cpu.cpp",
+        "src/emulator.cpp",
+        "src/mmu.cpp",
+        "src/ppu.cpp",
+        "src/timer.cpp",
+        "src/renderer.cpp",
+        "src/serial.cpp",
+        "-o",
+        "bin/emulator"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": ["$gcc"],
-      "detail": "Builds all source files in src/ to create the emulator executable"
+      "problemMatcher": []
     },
     {
       "label": "Run Emulator",
       "type": "shell",
-      "command": "${workspaceFolder}/bin/GameBoy",
-      "args": [],
+      "command": "./bin/emulator",
       "dependsOn": "Build Emulator",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
       "group": {
         "kind": "test",
-        "isDefault": false
+        "isDefault": true
       },
       "presentation": {
         "echo": true,
@@ -38,8 +39,7 @@
         "focus": false,
         "panel": "shared"
       },
-      "detail": "Builds and runs the emulator"
+      "problemMatcher": []
     }
   ]
 }
-
