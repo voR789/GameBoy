@@ -12,6 +12,7 @@
 
 #include "mbc.h"
 #include "ppu.h"
+#include "serial.h"
 // Timer registers are at:
 #define REG_DIV 0xFF04
 #define REG_TIMA 0xFF05
@@ -27,47 +28,47 @@ void mmu::clearMem() {
     memset(OAM, 0, sizeof(OAM));
     memset(HRAM, 0, sizeof(HRAM));
     IE = 0x20;
+    IF = 0x0;
 }
 
 uint8_t mmu::readMem(uint16_t index) {
+    // ROM
     if (index <= 0x7FFF) {
         return mbc->readROM(index);
     }
-
+    // Video RAM
     if (index <= 0x9FFF) {
-        return VRAM[index - 0x8000];  // Video RAM
+        return VRAM[index - 0x8000];  
     }
-
+    // External (MBC) RAM
     if (index <= 0xBFFF) {
-        // MBC RAM
         return mbc->readRAM(index);
     }
-
+    // Work RAM
     if (index <= 0xDFFF) {
-        return WRAM[index - 0xC000];  // Work RAM
+        return WRAM[index - 0xC000];  
     }
-
+    // Echo RAM - Mirrors WRAM
     if (index <= 0xFDFF) {
-        return WRAM[index - 0xE000];  // Echo RAM - Mirrors WRAM
+        return WRAM[index - 0xE000]; 
     }
-
+    // Object Attribute Memory
     if (index <= 0xFE9F) {
-        return OAM[index - 0xFE00];  // Object Attribute Memory
+        return OAM[index - 0xFE00]; 
     }
-
+    // Unused Memory Map
     if (index <= 0xFEFF) {
         return 0;
-        // throw std::runtime_error("Read to unusable memory 0xFEA0 - 0xFFEF"); // Unusable Memory
     }
-
+    // I/O Registers
     if (index <= 0xFF7F) {
-        switch (index) {  // I/O Registers
+        switch (index) {  
             case 0xFF00:
                 return 0xCF;  // TODO: JOYP (no buttons pressed)
             case 0xFF01:
-                return IO_REGISTERS[index - 0xFF00];  // SB (Serial Transfer Data)
+                return SERIAL->readSB();  // SB (Serial Transfer Data)
             case 0xFF02:
-                return IO_REGISTERS[index - 0xFF00];  // SC (Serial Transfer Control)
+                return SERIAL->readSC();  // SC (Serial Transfer Control)
 
             // Timer Registers
             case 0xFF04:
@@ -109,18 +110,15 @@ uint8_t mmu::readMem(uint16_t index) {
                 return PPU->readWY();  // WY
             case 0xFF4B:
                 return PPU->readWX();  // WX
-
             case 0xFF50:
                 return IO_REGISTERS[index - 0xFF00];  // TODO: Boot ROM mapping control
-            default:
-                return IO_REGISTERS[index - 0xFF00];  // Stubbed are the CGB registers
-        }                                             // TODO: LCD, Boot ROM Mapping
+        }                                             // TODO: Boot ROM Mapping
     }
-
+    // High RAM
     if (index <= 0xFFFE) {
         return HRAM[index - 0xFF80];
     }
-
+    // Interrupt Enable
     if (index == 0xFFFF) {
         return IE;
     }
@@ -129,57 +127,51 @@ uint8_t mmu::readMem(uint16_t index) {
 }
 
 void mmu::writeMem(uint8_t byte, uint16_t index) {
+    // ROM
     if (index <= 0x7FFF) {
         // writes to this area are not allowed traditionally, instead used as writes to MBC registers
         mbc->writeROM(byte, index);
         return;
     }
-
+    // Video RAM
     if (index <= 0x9FFF) {
         VRAM[index - 0x8000] = byte;
         return;
     }
-
+    // External (MBC) RAM
     if (index <= 0xBFFF) {
         mbc->writeRAM(byte, index);
     }
-
+    // Work RAM
     if (index <= 0xDFFF) {
-        if (byte == 0x76) {
-            // c07d, 0xc08a. 0xc594,0xc682
-        }
         WRAM[index - 0xC000] = byte;
         return;
     }
-
+    // Echo RAM
     if (index <= 0xFDFF) {
-        WRAM[index - 0xE000] = byte;  // Write to mirror
+        WRAM[index - 0xE000] = byte; 
         return;
     }
-
+    // Object Attribute Memory  
     if (index <= 0xFE9F) {
         OAM[index - 0xFE00] = byte;
         return;
     }
-
+    // Unused Memory
     if (index <= 0xFEFF) {
         return;
-        // throw std::runtime_error("Write to unusable memory 0xFEA0 - 0xFFEF"); // Unusable Memory
     }
-
+    // I/O Registers
     if (index <= 0xFF7F) {
-        switch (index) {  // I/O Registers
+        switch (index) {  
             // TODO: Joypad input
+
             // Serial Transfer
             case 0xFF01:  // SB (Serial Output Data)
-                IO_REGISTERS[index - 0xFF00] = byte;
+                SERIAL->writeSB(byte);
                 break;
             case 0xFF02:  // SC (Serial Output Enable) - Actual wire functionality stubbed
-                IO_REGISTERS[index - 0xFF00] = byte;
-                if (byte == 0x81) {
-                    std::cout << "" << static_cast<char>(IO_REGISTERS[0xFF01 - 0xFF00]);
-                    std::cout.flush();
-                }
+                SERIAL->writeSC(byte);
                 break;
 
             // Timer Registers
@@ -195,6 +187,7 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
             case 0xFF07:
                 TIMER->writeTAC(byte);  // TAC (Selects timer speed off bits)
                 break;
+
             case 0xFF0F:
                 IO_REGISTERS[index - 0xFF00] = byte;  // Interrupt Flag
                 break;
@@ -245,15 +238,15 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
                 break;
         }
         return;
-    }  // TODO: LCD, Boot ROM Mapping
-
+    } 
+    // High RAM
     if (index <= 0xFFFE) {
         HRAM[index - 0xFF80] = byte;
         return;
     }
-
+    // Interrupt Enable 
     if (index == 0xFFFF) {
-        IE = byte;  // mask out unused bytes
+        IE = byte & 0x1F;  // mask out unused bytes
         return;
     }
 }
@@ -676,6 +669,9 @@ void noMBC::writeRAM(uint8_t byte, uint16_t addr) {
 }
 
 void noMBC::reset() {}
+
+// IO Linking
+void mmu::linkSERIAL(serial* serial_) { SERIAL = serial_; }
 
 void mmu::linkTIMER(timer* timer_) { TIMER = timer_; }
 

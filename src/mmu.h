@@ -9,6 +9,7 @@
 // Forward Declaration to avoid circular import issues
 class timer;
 class ppu;
+class serial;
 
 class mmu{
     private:
@@ -23,14 +24,20 @@ class mmu{
         uint8_t WRAM[8192];
         uint8_t ECHO_RAM[7680]; // Mirrors WRAM
         uint8_t OAM[160];
-        uint8_t IO_REGISTERS[128]; // Next to eliminate
+        uint8_t IO_REGISTERS[128]; // TODO: Next to eliminate
         uint8_t HRAM[127];
+
+        // Interrupt Flags
+        uint8_t IF;
         uint8_t IE;
 
         // MBC
         std::unique_ptr<MBC> mbc;
 
-        // Timer
+        // Serial Pointer
+        serial* SERIAL;
+
+        // Timer Pointer
         timer* TIMER;
 
         // PPU Pointer
@@ -43,6 +50,8 @@ class mmu{
         void writeMem(uint8_t byte, uint16_t address);       
         void loadGame(const std::string& filename);
         
+        // Serial Output mutual connection
+        void linkSERIAL(serial* serial_);
 
         // TIMER mutual connection
         void linkTIMER(timer* timer_);

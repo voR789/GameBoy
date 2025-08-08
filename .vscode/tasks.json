@@ -7,7 +7,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "mkdir -p bin && /usr/bin/g++ -std=c++17 -g -Wall -Wextra -Isrc src/emulator.cpp src/cpu.cpp src/mmu.cpp src/ppu.cpp src/timer.cpp -o bin/GameBoy"
+        "mkdir -p bin && /usr/bin/g++ -std=c++17 -g -Wall -Wextra -Isrc src/emulator.cpp src/cpu.cpp src/mmu.cpp src/ppu.cpp src/timer.cpp src/serial.cpp -o bin/GameBoy"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

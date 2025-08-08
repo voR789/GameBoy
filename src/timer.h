@@ -15,8 +15,6 @@ class timer{
         bool overflowPending;
         int overflowDelay;
 
-        // Debug
-        int totalCycles;
     public:
         timer(mmu& mmu_ref);
         // getter and setter funcs

@@ -15,21 +15,12 @@
 #define REG_TMA 0xFF06
 #define REG_TAC 0xFF07
 
-timer::timer(mmu &MMU_REF) : MMU(MMU_REF) {
+timer::timer(mmu &MMU_REF) 
+    : MMU(MMU_REF), divCounter(0), TIMA(0), TMA(0), TAC(0), clockBit(0), overflowPending(0), overflowDelay(0) {
     MMU.linkTIMER(this);
-    divCounter = 0;
-    TIMA = 0;
-    TMA = 0;
-    TAC = 0x0;
-    clockBit = 0;
-    overflowPending = false;
-    overflowDelay = 0;
-    // Debug
-    totalCycles = 0;
 }
 
 void timer::tick() {
-    totalCycles++;
     divCounter++;
     if(TAC & 0x4){ // bit 2 = enabled
         // falling edge on clockBit -> set on TAC write

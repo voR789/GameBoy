@@ -3,10 +3,13 @@
 #include "cpu.h"
 #include "mmu.h"
 #include "ppu.h"
+#include "timer.h"
+#include "serial.h"
 
 int main() {
     // TODO: Verify power on starting vals when done, add stopped logic
     mmu   MMU;
+    serial SERIAL(MMU);
     timer TIMER(MMU);
     ppu   PPU(MMU, TIMER);
     cpu   CPU(MMU, PPU, TIMER);

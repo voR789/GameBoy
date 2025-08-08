@@ -55,7 +55,7 @@ void ppu::writeSTAT(uint8_t byte){
 } 
 
 uint8_t ppu::readLY(){
-
+    return 0;
 }
 
 void ppu::writeDMA(uint8_t byte){

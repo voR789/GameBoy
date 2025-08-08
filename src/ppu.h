@@ -6,6 +6,7 @@
     uint8_t read##name() const { return name; }  \
     void write##name(uint8_t byte) { name = byte; }
 
+#pragma once
 class ppu{
     private:
         mmu& MMU;
