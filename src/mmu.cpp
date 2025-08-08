@@ -1,14 +1,16 @@
 #include "mmu.h"
-#include "mbc.h"
 
+#include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
+#include "mbc.h"
 #include "ppu.h"
 // Timer registers are at:
 #define REG_DIV 0xFF04
@@ -20,7 +22,6 @@ mmu::mmu() : PPU(nullptr), TIMER(nullptr) { clearMem(); }
 
 void mmu::clearMem() {
     memset(VRAM, 0, sizeof(VRAM));
-    memset(ERAM, 0, sizeof(ERAM));
     memset(WRAM, 0, sizeof(WRAM));
     memset(ECHO_RAM, 0, sizeof(ECHO_RAM));
     memset(OAM, 0, sizeof(OAM));
@@ -30,7 +31,7 @@ void mmu::clearMem() {
 
 uint8_t mmu::readMem(uint16_t index) {
     if (index <= 0x7FFF) {
-        return handleROMRead(index);
+        return mbc->readROM(index);
     }
 
     if (index <= 0x9FFF) {
@@ -39,11 +40,7 @@ uint8_t mmu::readMem(uint16_t index) {
 
     if (index <= 0xBFFF) {
         // MBC RAM
-        if (MBC_REG[0]) {
-            return handleRAMRead(index);
-        } else {
-            return 0xFF;
-        }
+        return mbc->readRAM(index);
     }
 
     if (index <= 0xDFFF) {
@@ -134,7 +131,7 @@ uint8_t mmu::readMem(uint16_t index) {
 void mmu::writeMem(uint8_t byte, uint16_t index) {
     if (index <= 0x7FFF) {
         // writes to this area are not allowed traditionally, instead used as writes to MBC registers
-        write_MBC_REG(byte, index);
+        mbc->writeROM(byte, index);
         return;
     }
 
@@ -144,10 +141,7 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
     }
 
     if (index <= 0xBFFF) {
-        if (MBC_REG[0]) {
-            handleRAMWrite(byte, index);
-        }
-        return;
+        mbc->writeRAM(byte, index);
     }
 
     if (index <= 0xDFFF) {
@@ -273,414 +267,65 @@ void mmu::loadGame(const std::string& filename) {  // Initialize MBC
     // Initialize ROM/MBC
     ROM      = std::vector<uint8_t>((std::istreambuf_iterator<char>(rom)), {});  // ROM vector
     cartType = ROM.at(0x147);
-    romSize  = ROM.at(0x0148);
     ramSize  = ROM.at(0x149);
 
-    MBC_REG[0] = 0x0; 
-    MBC_REG[1] = 0x1;
-    MBC_REG[2] = 0x0;
-    MBC_REG[3] = 0x0;
-    BANK       = 0x1;
-
-    largeBankMode = false;
-
-    if (cartType <= 0x3) {
-        switch (romSize) {
-            case (0x00):
-                mask = 0x1;
-                break;  // only 1 bit needed for 32 Kib cart, etc...
-            case (0x01):
-                mask = 0x3;
-                break;
-            case (0x02):
-                mask = 0x7;
-                break;
-            case (0x03):
-                mask = 0x0F;
-                break;
-            case (0x04):
-                mask = 0x1F;
-                break;  // 5 bit normal pull for 512 Kib and larger
-            default: {  // Larger cart (2 additional bit) logic AND MODE 0
-                mask          = 0x1F;
-                largeBankMode = true;
-            }
+    // Initialize External RAM
+    switch (ramSize) {
+        case (0x0): {
+            SRAM = std::vector<uint8_t>(8192);
+            break;
         }
-
-        switch (ramSize) {
-            case (0x0): {
-                SRAM = std::vector<uint8_t>(8192);
-                break;
-            }
-            case (0x1): {
-                SRAM = std::vector<uint8_t>(8192);
-                break;
-            }
-            case (0x2): {
-                SRAM = std::vector<uint8_t>(8192);
-                break;
-            }
-            case (0x3): {
-                SRAM = std::vector<uint8_t>(4 * 8192);
-                break;
-            }
-            case (0x4): {
-                SRAM = std::vector<uint8_t>(16 * 8192);
-                break;
-            }
-            case (0x5): {
-                SRAM = std::vector<uint8_t>(8 * 8192);
-                break;
-            }
+        case (0x1): {
+            SRAM = std::vector<uint8_t>(8192);
+            break;
         }
-    } else if (cartType <= 0x6) {
-        mask = 0xF;
-        SRAM = std::vector<uint8_t>(512);
-    } else if (cartType <= 0x9) {
-        mask = 0xFF;  // stub val
-        SRAM = std::vector<uint8_t>(8192);
-    } else if (cartType <= 0x13) {  // MBC 3
-        mask = 0x7F;
-        switch (ramSize) {
-            case (0x0): {
-                SRAM = std::vector<uint8_t>(0);
-                break;
-            }
-            case (0x1): {
-                SRAM = std::vector<uint8_t>(0);
-                break;
-            }
-            case (0x2): {
-                SRAM = std::vector<uint8_t>(8192);
-                break;
-            }
-            case (0x3): {
-                SRAM = std::vector<uint8_t>(4 * 8192);
-                break;
-            }
-            case (0x4): {
-                SRAM = std::vector<uint8_t>(16 * 8192);
-                break;
-            }
-            case (0x5): {
-                SRAM = std::vector<uint8_t>(8 * 8192);
-                break;
-            }
+        case (0x2): {
+            SRAM = std::vector<uint8_t>(8192);
+            break;
         }
-    } else if (cartType <= 0x1E) {  // MBC5
-        mask = 0x1FF;
-        switch (ramSize) {
-            case (0x0): {
-                SRAM = std::vector<uint8_t>(0);
-                break;
-            }
-            case (0x1): {
-                SRAM = std::vector<uint8_t>(0);
-                break;
-            }
-            case (0x2): {
-                SRAM = std::vector<uint8_t>(8192);
-                break;
-            }
-            case (0x3): {
-                SRAM = std::vector<uint8_t>(4 * 8192);
-                break;
-            }
-            case (0x4): {
-                SRAM = std::vector<uint8_t>(16 * 8192);
-                break;
-            }
+        case (0x3): {
+            SRAM = std::vector<uint8_t>(4 * 8192);
+            break;
+        }
+        case (0x4): {
+            SRAM = std::vector<uint8_t>(16 * 8192);
+            break;
+        }
+        case (0x5): {
+            SRAM = std::vector<uint8_t>(8 * 8192);
+            break;
         }
     }
-}
 
-uint8_t mmu::handleROMRead(uint16_t index) {
-    int address;  // Convert from index into ROM address, based on MBC
-    recalculateBank();
-    if (cartType <= 0x3) {          // MBC1
-        if (MBC_REG[3] == 0) {      // banking mode 0
-            if (index <= 0x3FFF) {  // Lower Bank
-                address = index;
-            } else {                         // Upper Bank
-                address = (BANK * 0x4000) |  // 16 Kib banks (0x4000)
-                          (index - 0x4000);  // Every bank is individual, so we subtract 0x4000 to act at 0...
-            }
-        } else {  // banking mode 1
-            if (index <= 0x3FFF) {
-                address = ((MBC_REG[2] << 5) & 0x60) * 0x4000 | index;
-            } else {
-                address = (BANK * 0x4000) | (index - 0x4000);
-            }
-        }
-    } else if (cartType <= 0x6) {  // MBC2
-        if (index <= 0x3FFF) {
-            address = index;
-        } else {
-            address = (BANK * 0x4000) | (index - 0x4000);
-        }
-    } else if (cartType <= 0x9) {
-        address = index;
-    } else if (cartType <= 0x0D) {
-        // Incomplete MMM01 - multigame compilation mode -> Stubbed as MBC1
-        if (MBC_REG[3] == 0) {
-            if (index <= 0x3FFF) {
-                address = index;
-            } else {
-                address = (BANK * 0x4000) | (index - 0x4000);
-            }
-        } else {  // banking mode 1
-            if (index <= 0x3FFF) {
-                address = (MBC_REG[2] << 19) | index;
-            } else {
-                address = (BANK * 0x4000) | (index - 0x4000);
-            }
-        }
-    } else if (cartType <= 0x13) {  // MBC 3
-        if (index <= 0x3FFF) {
-            address = index;
-        } else {
-            address = (BANK * 0x4000) | (index - 0x4000);
-        }
-    } else if (cartType <= 0x1E) {  // MBC5
-        if (address <= 0x3FFF) {
-            address = index;
-        } else {
-            address = (BANK * 0x4000) | (index - 0x4000);
-        }
-    }
-    return ROM.at(address);
-}
-
-uint8_t mmu::handleRAMRead(uint16_t index) {
-    int address;
-    recalculateBank();
-    if (cartType <= 0x3) {
-        if (MBC_REG[3] == 0) {  // Banking mode 0
-            address = index - 0xA000;
-        } else {                                                 // Banking mode 1
-            address = (MBC_REG[2] * 0x2000) | (index - 0xA000);  // 8 Kib Banks
-        }
-    } else if (cartType <= 0x6) {
-        if ((index >= 0xA000) && (index <= 0xA1FF)) {
-            address = index - 0xA000;
-        } else {  // Echo behavior
-            address = (index - 0xA000) % 512;
-        }
-    } else if (cartType <= 0x9) {
-        address = index - 0xA000;
-    } else if (cartType <= 0x0D) {
-        // Incomplete MMM01 - multigame compilation mode
-        if (MBC_REG[3] == 0) {
-            address = index - 0xA000;
-        } else {
-            address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
-        }
-    } else if (cartType <= 0x13) {  // MBC 3
-        if (MBC_REG[2] <= 0x03) {   // RAM Bank
-            address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
-        } else if (MBC_REG[2] >= 0x08 && MBC_REG[2] <= 0x0C) {  // RTC
-            // Stubbed
-            return 0x0;
-        }
-    } else if (cartType <= 0x1E) {  // MBC5
-        address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
-    }
-    return SRAM.at(address);
-}
-
-// Add in battery and save functionality
-void mmu::handleRAMWrite(uint8_t byte, uint16_t index) {
-    int address;
-    recalculateBank();
-    if (cartType <= 0x3) {
-        if (MBC_REG[3] == 0) {  // Banking mode 0
-            address = index - 0xA000;
-        } else {                                                 // Banking mode 1
-            address = (MBC_REG[2] * 0x2000) | (index - 0xA000);  // 8 Kib Banks
-        }
-    } else if (cartType <= 0x6) {
-        if ((index >= 0xA000) && (index <= 0xA1FF)) {
-            address = index - 0xA000;
-        } else {  // Echo behavior
-            address = (index - 0xA000) % 512;
-        }
-    } else if (cartType <= 0x9) {
-        address = index - 0xA000;
-    } else if (cartType <= 0x0D) {
-        if (MBC_REG[3] == 0) {
-            address = index - 0xA000;
-        } else {
-            address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
-        }
-    } else if (cartType <= 0x13) {  // MBC 3
-        if (MBC_REG[2] <= 0x03) {
-            address          = (MBC_REG[2] * 0x2000) | (index - 0xA000);
-            SRAM.at(address) = byte;
-        } else if (MBC_REG[2] >= 0x08 && MBC_REG[2] <= 0x0C) {
-            // RTC register write stub
-        }
-    } else if (cartType <= 0x1E) {  // MBC5
-        address = (MBC_REG[2] * 0x2000) | (index - 0xA000);
-    }
-    SRAM.at(address) = byte;
-}
-
-void mmu::write_MBC_REG(uint8_t byte, uint16_t address) {
-    if (cartType <= 0x3) {  // MBC1 Behavior
-        if (0x0000 <= address and address <= 0x1FFF) {
-            // RAM Enable
-            if ((byte & 0xF) == 0xA) {
-                MBC_REG[0] = 0x1;  // Enabled
-            } else {
-                MBC_REG[0] = 0x0;  // Disabled
-            }
-        }
-
-        if (0x2000 <= address and address <= 0x3FFF) {
-            // ROM Bank
-            MBC_REG[1] = byte;
-            if ((MBC_REG[1] & 0x1F) == 0x0) {
-                MBC_REG[1] |= 0x1;
-            }  // 0x0 Conversion
-
-            if (largeBankMode) {
-                BANK = (MBC_REG[1] & mask) + (MBC_REG[2] << 5);  // make occupy bits 5/6 for addition
-            } else {
-                BANK = MBC_REG[1] & mask;
-            }
-        }
-
-        if (0x4000 <= address and address <= 0x5FFF) {
-            // RAM Bank Number, or Upper ROM Bank Number
-            MBC_REG[2] = byte & 0x3;
-        }
-
-        if (0x6000 <= address and address <= 0x7FFF) {
-            // Banking Mode Select
-            MBC_REG[3] = byte & 0x1;
-        }
-    } else if (cartType <= 0x6) {  // MBC2 Behavior
-        if (address <= 0x3FFF) {
-            if ((address >> 8) & 0x1) {  // Bit 8 set
-                MBC_REG[1] = byte;
-                if ((MBC_REG[1] & 0xF) == 0x0) {
-                    MBC_REG[1] == 0x1;
-                }
-                BANK = MBC_REG[1] & mask;
-
-            } else {  // Bit 8 Clear
-                if ((byte & 0xF) == 0xA) {
-                    MBC_REG[0] = 0x1;  // RAM Enable
-                } else {
-                    MBC_REG[0] = 0x0;  // RAM Disable
-                }
-            }
-        } else {
-            throw std::runtime_error("Write to illegal address: MBC2");
-        }
-    } else if (cartType <= 0x0D) {
-        if (0x0000 <= address and address <= 0x1FFF) {
-            if ((byte & 0xF) == 0xA) {
-                MBC_REG[0] = 0x1;
-            } else {
-                MBC_REG[0] = 0x0;
-            }
-        }
-
-        if (0x2000 <= address and address <= 0x3FFF) {
-            // ROM Bank
-            MBC_REG[1] = byte;
-            if ((MBC_REG[1] & 0x1F) == 0x0) {
-                MBC_REG[1] |= 0x1;
-            }
-
-            if (largeBankMode) {
-                BANK = (MBC_REG[1] & mask) + (MBC_REG[2] << 5);
-            } else {
-                BANK = MBC_REG[1] & mask;
-            }
-        }
-
-        if (0x4000 <= address and address <= 0x5FFF) {
-            // RAM Bank Number, or Upper ROM Bank Number
-            MBC_REG[2] = byte & 0x3;
-        }
-
-        if (0x6000 <= address and address <= 0x7FFF) {
-            // Banking Mode Select
-            MBC_REG[3] = byte & 0x1;
-        }
-    } else if (cartType <= 0x13) {                      // MBC 3
-        if (0x0000 <= address and address <= 0x1FFF) {  // RAM Enable
-            if ((byte & 0xF) == 0xA) {
-                MBC_REG[0] = 0x1;  // Enabled
-            } else {
-                MBC_REG[0] = 0x0;  // Disabled
-            }
-        }
-        if (0x2000 <= address and address <= 0x3FFF) {
-            MBC_REG[1] = byte;
-            if (MBC_REG[1] == 0x0) {
-                MBC_REG[1] |= 0x1;
-            }
-            BANK = MBC_REG[1] & mask;
-        }
-        if (0x4000 <= address and address <= 0x5FFF) {
-            MBC_REG[2] = byte;  // Controls RAM Bank or RTC Register
-        }
-        if (0x6000 <= address and address <= 0x7FFF) {
-            // Stubbed
-        }
-        if (0xA000 <= address and address <= 0xBFFF) {
-            // Stubbed
-        }
-    } else if (cartType <= 0x1E) {                      // MBC5
-        if (0x0000 <= address and address <= 0x1FFF) {  // RAM Enable
-            if ((byte & 0xF) == 0xA) {
-                MBC_REG[0] = 0x1;  // Enabled
-            } else {
-                MBC_REG[0] = 0x0;  // Disabled
-            }
-        }
-        if (0x2000 <= address and address <= 0x3FFF) {
-            BANK = byte & mask;
-        }
-        if (0x4000 <= address and address <= 0x5FFF) {
-            BANK = (BANK | (byte << 8)) & mask;
-        }
-        if (0x6000 <= address and address <= 0x7FFF) {
-            if (byte <= 0x0F) {
-                MBC_REG[2] = byte;
-            }
-        }
+    // Initialize MBC
+    if (cartType == 0x0 || cartType == 0x8 || cartType == 0x9) {
+        mbc = std::make_unique<noMBC>(ROM, SRAM);
+    } else if (cartType >= 0x1 && cartType <= 0x3) {
+        mbc = std::make_unique<MBC1>(ROM, SRAM);
+    } else if (cartType == 0x5 || cartType == 0x6) {
+        mbc = std::make_unique<MBC2>(ROM, SRAM);
+    } else if (cartType >= 0xF && cartType <= 0x13) {
+        mbc = std::make_unique<MBC3>(ROM, SRAM);
+    } else if (cartType >= 0x19 && cartType <= 0x1E) {
+        mbc = std::make_unique<MBC5>(ROM, SRAM);
     }
 }
-
-void mmu::recalculateBank() {
-    if (largeBankMode) {
-        BANK = (MBC_REG[1] & mask) + (MBC_REG[2] << 5);
-    } else {
-        BANK = MBC_REG[1] & mask;
-    }
-    if ((BANK & 0x1F) == 0) BANK |= 0x1;  // avoid bank 0
-}
-
 
 // MBC1
-MBC1::MBC1(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram) 
+MBC1::MBC1(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram)
     : ROM(rom), SRAM(sram), ram_enable(0), rom_bank(1), ram_bank_or_upper_rom_bank(1), bank_mode(0) {}
 
 uint8_t MBC1::readROM(uint16_t addr) {
     int rom_address;
-    if(bank_mode == 0){
-        if(addr <= 0x3FFF){ // Bank 0
-            rom_address =  addr;
+    if (bank_mode == 0) {
+        if (addr <= 0x3FFF) {  // Bank 0
+            rom_address = addr;
         } else {
             rom_address = (rom_bank * 0x4000) + (addr - 0x4000);
         }
-    } else { // Bank mode 1
-        if(addr <= 0x3FFF){ // Bank 0
-            rom_address =  ((ram_bank_or_upper_rom_bank << 5) * 0x4000) + addr;
+    } else {                   // Bank mode 1
+        if (addr <= 0x3FFF) {  // Bank 0
+            rom_address = ((ram_bank_or_upper_rom_bank << 5) * 0x4000) + addr;
         } else {
             rom_address = (rom_bank * 0x4000) + (addr - 0x4000);
         }
@@ -691,52 +336,49 @@ uint8_t MBC1::readROM(uint16_t addr) {
 void MBC1::writeROM(uint8_t byte, uint16_t addr) {
     // Writes to ROM affect reg
     if (addr <= 0x1FFF) {
-            // RAM Enable
-            ram_enable = ((byte & 0xF) == 0xA);
-        }
-    else if (addr <= 0x3FFF) {
-            // ROM Bank
-            rom_bank = ((byte & 0x1F) == 0) ? 0x01 : (byte & 0x1F); // If 0, convert to bank 1
+        // RAM Enable
+        ram_enable = ((byte & 0xF) == 0xA);
+    } else if (addr <= 0x3FFF) {
+        // ROM Bank
+        rom_bank = ((byte & 0x1F) == 0) ? 0x01 : (byte & 0x1F);  // If 0, convert to bank 1
 
-            uint8_t romSize = ROM.at(0x0148);
-            uint8_t mask = (1 << (romSize+1)) - 1; // Formula maps romSize select to mask
-            if (mask >= 0x1F && bank_mode == 0) {
-                // Register maxes out at 5 bits, so for larger values we steal the RAM bank to make a 7 bit bank
-                rom_bank = (ram_bank_or_upper_rom_bank << 5) | (rom_bank & 0x1F);
-            } else {
-                rom_bank = rom_bank & mask;
-            }
+        uint8_t romSize = ROM.at(0x0148);
+        uint8_t mask    = (1 << (romSize + 1)) - 1;  // Formula maps romSize select to mask
+        if (mask >= 0x1F && bank_mode == 0) {
+            // Register maxes out at 5 bits, so for larger values we steal the RAM bank to make a 7 bit bank
+            rom_bank = (ram_bank_or_upper_rom_bank << 5) | (rom_bank & 0x1F);
+        } else {
+            rom_bank = rom_bank & mask;
         }
-    else if (addr <= 0x5FFF) {
-            // RAM Bank Number, or Upper ROM Bank Number
-            ram_bank_or_upper_rom_bank = byte & 0x3;
-        }
-    else if (addr <= 0x7FFF) {
-            // Banking Mode Select
-            bank_mode = byte & 0x1;
-        }
+    } else if (addr <= 0x5FFF) {
+        // RAM Bank Number, or Upper ROM Bank Number
+        ram_bank_or_upper_rom_bank = byte & 0x3;
+    } else if (addr <= 0x7FFF) {
+        // Banking Mode Select
+        bank_mode = byte & 0x1;
+    }
 }
 
 uint8_t MBC1::readRAM(uint16_t addr) {
-    int sram_address = 0xFF; // Base trash val
-    if(ram_enable){
-        if(bank_mode == 0){
+    int sram_address;
+    if (ram_enable) {
+        if (bank_mode == 0) {
             sram_address = addr - 0xA000;
-        } else{ // RAM Banking mode
+        } else {  // RAM Banking mode
             sram_address = (ram_bank_or_upper_rom_bank * 0x2000) + (addr - 0xA000);
         }
     } else {
-        return sram_address;
+        return 0xFF;
     }
     return SRAM.at(sram_address);
 }
 
 void MBC1::writeRAM(uint8_t byte, uint16_t addr) {
-    int sram_address = 0xFF; // Base trash val
-    if(ram_enable){
-        if(bank_mode == 0){
+    int sram_address = 0xFF;  // Base trash val
+    if (ram_enable) {
+        if (bank_mode == 0) {
             sram_address = addr - 0xA000;
-        } else{ // RAM Banking mode
+        } else {  // RAM Banking mode
             sram_address = (ram_bank_or_upper_rom_bank * 0x2000) + (addr - 0xA000);
         }
     } else {
@@ -746,21 +388,21 @@ void MBC1::writeRAM(uint8_t byte, uint16_t addr) {
 }
 
 void MBC1::reset() {
-    ram_enable = 0;
-    rom_bank = 1;
+    ram_enable                 = 0;
+    rom_bank                   = 1;
     ram_bank_or_upper_rom_bank = 0;
-    bank_mode = 0;
+    bank_mode                  = 0;
 }
 
 // MBC2
-MBC2::MBC2(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram) 
+MBC2::MBC2(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram)
     : ROM(rom), SRAM(sram), ram_enable(0), rom_bank(1) {}
 
 uint8_t MBC2::readROM(uint16_t addr) {
     int rom_address;
-    if(addr <= 0x3FFF){
+    if (addr <= 0x3FFF) {
         rom_address = addr;
-    } else { // Bank n
+    } else {  // Bank n
         rom_address = (rom_bank * 0x4000) + (addr - 0x4000);
     }
     return ROM.at(rom_address);
@@ -770,31 +412,31 @@ void MBC2::writeROM(uint8_t byte, uint16_t addr) {
     // Writes to ROM affect reg
     if (addr <= 0x3FFF) {
         // RAM Enable, ROM Bank Number
-        if((addr & 0x0100) == 0){ // RAM Control (Bit 8 of addr clear)
+        if ((addr & 0x0100) == 0) {  // RAM Control (Bit 8 of addr clear)
             ram_enable = ((byte & 0xF) == 0xA);
-        } else { // ROM Control (Bit 8 of addr set)
+        } else {  // ROM Control (Bit 8 of addr set)
             rom_bank = ((byte & 0xF) == 0) ? 0x1 : (byte & 0xF);
         }
     }
 }
 
 uint8_t MBC2::readRAM(uint16_t addr) {
-    int sram_address = 0xFF; // Base trash val
-    if(ram_enable){
+    int sram_address;
+    if (ram_enable) {
         if ((addr >= 0xA000) && (addr <= 0xA1FF)) {
             sram_address = addr - 0xA000;
         } else {  // Echo behavior
             sram_address = (addr - 0xA000) % 512;
         }
     } else {
-        return sram_address;
+        return 0xFF;
     }
-    return (SRAM.at(sram_address)) & 0xF; // RAM is 4 bit
+    return (SRAM.at(sram_address)) & 0xF;  // RAM is 4 bit
 }
 
 void MBC2::writeRAM(uint8_t byte, uint16_t addr) {
-    int sram_address = 0xFF; // Base trash val
-    if(ram_enable){
+    int sram_address = 0xFF;  // Base trash val
+    if (ram_enable) {
         if ((addr >= 0xA000) && (addr <= 0xA1FF)) {
             sram_address = addr - 0xA000;
         } else {  // Echo behavior
@@ -808,10 +450,232 @@ void MBC2::writeRAM(uint8_t byte, uint16_t addr) {
 
 void MBC2::reset() {
     ram_enable = 0;
-    rom_bank = 1;
+    rom_bank   = 1;
 }
 
+// MBC3
+MBC3::MBC3(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram)
+    : ROM(rom),
+      SRAM(sram),
+      rtc_s(0),
+      rtc_m(0),
+      rtc_h(0),
+      rtc_dl(0),
+      rtc_dh(0),
+      ram_and_timer_enable(0),
+      rom_bank(1),
+      ram_bank_or_rtc_select(0),
+      latch_clock(0xFF) {}
 
+uint8_t MBC3::readROM(uint16_t addr) {
+    uint16_t rom_address;
+    if (addr <= 0x3FFF) {
+        rom_address = addr;
+    } else {
+        rom_address = (rom_bank * 0x4000) - 0x4000;
+    }
+    return ROM.at(rom_address);
+}
+
+void MBC3::writeROM(uint8_t byte, uint16_t addr) {
+    // Writes to ROM affect reg
+    if (addr <= 0x1FFF) {
+        ram_and_timer_enable = ((byte & 0xF) == 0xA);
+    } else if (addr <= 0x3FFF) {
+        rom_bank = ((byte & 0x1F) == 0) ? 0x01 : (byte & 0x7F);  // If 0, convert to bank num 1
+    } else if (addr <= 0x5FFF) {
+        ram_bank_or_rtc_select = byte;  // 0x0 - 0x7 maps RAM, 0x8 - 0xC maps RTC
+    } else if (addr <= 0x7FFF) {
+        if (latch_clock == 0 && byte == 0x1) {
+            // Update time
+            auto now = std::chrono::steady_clock::now();
+            if (!(rtc_dh & 0x40)) {  // Clock does not update upon halt
+                accumulatedTime += std::chrono::duration_cast<std::chrono::seconds>(now - startTime)
+                                       .count();  // "Save" amount of time passed
+            }
+            startTime = now;
+
+            uint64_t timeMath = accumulatedTime;  // temp var to do time math
+            uint16_t days     = timeMath / 86400;
+            timeMath %= 86400;
+            uint8_t hours = timeMath / 3600;
+            timeMath %= 3600;
+            uint8_t minutes = timeMath / 60;
+            timeMath %= 60;
+            uint8_t seconds = timeMath;
+
+            // day counter carry flag
+            if (days > 0x1FF) {
+                rtc_dh |= 0x80;
+            }
+            rtc_dl = (days % 512) & 0xFF;
+            rtc_dh = (((days % 512) & 0x100) >> 8) | (rtc_dh & 0xC0);  // New day bit plus old flags
+            rtc_h  = hours;
+            rtc_m  = minutes;
+            rtc_s  = seconds;
+        }
+        latch_clock = byte;
+    }
+}
+
+uint8_t MBC3::readRAM(uint16_t addr) {
+    int sram_address;  // Base trash val
+    if (ram_and_timer_enable) {
+        if (ram_bank_or_rtc_select <= 0x07) {
+            sram_address = (ram_bank_or_rtc_select * 0x2000) + (addr - 0xA000);
+        } else if (ram_bank_or_rtc_select <= 0xC) {  // RTC Register mode
+            switch (ram_bank_or_rtc_select) {
+                case (0x08):
+                    return rtc_s;
+                case (0x09):
+                    return rtc_m;
+                case (0x0A):
+                    return rtc_h;
+                case (0x0B):
+                    return rtc_dl;
+                case (0x0C):
+                    return rtc_dh;
+            }
+        } else {
+            return 0xFF;  // Trash val
+        }
+    } else {
+        return 0xFF;
+    }
+    return (SRAM.at(sram_address));
+}
+
+void MBC3::writeRAM(uint8_t byte, uint16_t addr) {
+    int sram_address = 0xFF;  // Base trash val
+    if (ram_and_timer_enable) {
+        if (ram_bank_or_rtc_select <= 0x7) {
+            sram_address          = (ram_bank_or_rtc_select * 0x2000) + (addr - 0xA000);
+            SRAM.at(sram_address) = byte;
+        } else if (ram_bank_or_rtc_select <= 0xC) {  // RTC Register mode
+            // Update time
+            auto now = std::chrono::steady_clock::now();
+            if (!(rtc_dh & 0x40)) {  // Clock does not update upon halt
+                accumulatedTime += std::chrono::duration_cast<std::chrono::seconds>(now - startTime)
+                                       .count();  // "Save" amount of time passed
+            }
+            startTime = now;
+            switch (ram_bank_or_rtc_select) {
+                // rtc write logic
+                case (0x08): {
+                    rtc_s = byte;
+                    break;
+                }
+                case (0x09): {
+                    rtc_m = byte;
+                    break;
+                }
+                case (0x0A): {
+                    rtc_h = byte;
+                    break;
+                }
+                case (0x0B): {
+                    rtc_dl = byte;
+                    break;
+                }
+                case (0x0C): {
+                    rtc_dh = (byte & 0xC1);
+                    break;  // only uses bits 0, 6, 7
+                }
+            }
+        }
+    } else {
+        return;
+    }
+}
+
+void MBC3::reset() {
+    rtc_s                  = 0;
+    rtc_m                  = 0;
+    rtc_h                  = 0;
+    rtc_dl                 = 0;
+    rtc_dh                 = 0;
+    ram_and_timer_enable   = 0;
+    rom_bank               = 1;
+    ram_bank_or_rtc_select = 0;
+    latch_clock            = 0xFF;
+}
+
+// MBC5
+MBC5::MBC5(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram)
+    : ROM(rom), SRAM(sram), ram_enable(0), rom_bank_lower(1), rom_bank_upper(0), ram_bank(0) {}
+
+uint8_t MBC5::readROM(uint16_t addr) {
+    uint16_t rom_address;
+    if (addr <= 0x3FFF) {
+        rom_address = addr;
+    } else {
+        uint8_t rom_bank = (rom_bank_upper << 8) | rom_bank_lower;
+        rom_address      = (rom_bank * 0x4000) + (addr - 0x4000);
+    }
+    return ROM.at(rom_address);
+}
+
+void MBC5::writeROM(uint8_t byte, uint16_t addr) {
+    // Writes to ROM affect reg
+    if (addr <= 0x1FFF) {
+        ram_enable = ((byte & 0xF) == 0xA);
+    } else if (addr <= 0x2FFF) {
+        rom_bank_lower = byte;
+    } else if (addr <= 0x3FFF) {
+        rom_bank_upper = byte & 0x1;
+    } else if (addr <= 0x5FFF) {
+        ram_bank = byte & 0x0F;
+    }
+}
+
+uint8_t MBC5::readRAM(uint16_t addr) {
+    int sram_address;
+    if (ram_enable) {
+        sram_address = (ram_bank * 0x2000) + (addr - 0xA000);
+    } else {
+        return 0xFF;
+    }
+    return (SRAM.at(sram_address));
+}
+
+void MBC5::writeRAM(uint8_t byte, uint16_t addr) {
+    int sram_address;
+    if (ram_enable) {
+        sram_address = (ram_bank * 0x2000) + (addr - 0xA000);
+    } else {
+        return;
+    }
+    SRAM.at(sram_address) = byte;
+}
+
+void MBC5::reset() {
+    ram_enable     = 0;
+    rom_bank_lower = 1;
+    rom_bank_upper = 0;
+    ram_bank       = 0;
+}
+
+// no MBC
+noMBC::noMBC(const std::vector<uint8_t>& rom, std::vector<uint8_t>& sram) : ROM(rom), SRAM(sram) {}
+
+uint8_t noMBC::readROM(uint16_t addr) {
+    uint16_t rom_address = addr;
+    return ROM.at(rom_address);
+}
+
+void noMBC::writeROM(uint8_t byte, uint16_t addr) { return; }
+
+uint8_t noMBC::readRAM(uint16_t addr) {
+    int sram_address = (addr - 0xA000);
+    return (SRAM.at(sram_address));
+}
+
+void noMBC::writeRAM(uint8_t byte, uint16_t addr) {
+    int sram_address      = (addr - 0xA000);
+    SRAM.at(sram_address) = byte;
+}
+
+void noMBC::reset() {}
 
 void mmu::linkTIMER(timer* timer_) { TIMER = timer_; }
 
