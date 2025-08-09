@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <cstddef>
 
 #include "mbc.h"
 #include "ppu.h"
@@ -19,49 +20,58 @@
 #define REG_TMA 0xFF06
 #define REG_TAC 0xFF07
 
-mmu::mmu() : PPU(nullptr), TIMER(nullptr) { clearMem(); }
+mmu::mmu() : PPU(nullptr), TIMER(nullptr), SERIAL(nullptr) {
+    reset(); 
+}
 
-void mmu::clearMem() {
+void mmu::reset() {
     memset(VRAM, 0, sizeof(VRAM));
     memset(WRAM, 0, sizeof(WRAM));
-    memset(ECHO_RAM, 0, sizeof(ECHO_RAM));
     memset(OAM, 0, sizeof(OAM));
     memset(HRAM, 0, sizeof(HRAM));
-    IE = 0x20;
-    IF = 0x0;
+    IE = 0x0;
+    IF = 0xE1;
+    bootROMEnable = true;
 }
 
 uint8_t mmu::readMem(uint16_t index) {
+    if(dmaFlag){
+        if(index >= 0xFF80 && index <= 0xFFFE){ // ONLY Allow HRAM access in DMA
+            return HRAM[index];
+        } else{
+            return 0xFF; // Don't allow any other accesses
+        }
+    }
     // ROM
-    if (index <= 0x7FFF) {
+    else if (index <= 0x7FFF) {
         return mbc->readROM(index);
     }
     // Video RAM
-    if (index <= 0x9FFF) {
+    else if (index <= 0x9FFF) {
         return VRAM[index - 0x8000];  
     }
     // External (MBC) RAM
-    if (index <= 0xBFFF) {
+    else if (index <= 0xBFFF) {
         return mbc->readRAM(index);
     }
     // Work RAM
-    if (index <= 0xDFFF) {
+    else if (index <= 0xDFFF) {
         return WRAM[index - 0xC000];  
     }
     // Echo RAM - Mirrors WRAM
-    if (index <= 0xFDFF) {
+    else if (index <= 0xFDFF) {
         return WRAM[index - 0xE000]; 
     }
     // Object Attribute Memory
-    if (index <= 0xFE9F) {
+    else if (index <= 0xFE9F) {
         return OAM[index - 0xFE00]; 
     }
     // Unused Memory Map
-    if (index <= 0xFEFF) {
+    else if (index <= 0xFEFF) {
         return 0;
     }
     // I/O Registers
-    if (index <= 0xFF7F) {
+    else if (index <= 0xFF7F) {
         switch (index) {  
             case 0xFF00:
                 return 0xCF;  // TODO: JOYP (no buttons pressed)
@@ -81,7 +91,7 @@ uint8_t mmu::readMem(uint16_t index) {
                 return TIMER->readTAC();  // TAC (Controls Timer)
 
             case 0xFF0F:
-                return IO_REGISTERS[index - 0xFF00];  // IF (Interrupt Flag)
+                return IF;  // IF (Interrupt Flag)
 
             // cases 0xFF10 - FF3F -> audio (not handled)
 
@@ -111,58 +121,67 @@ uint8_t mmu::readMem(uint16_t index) {
             case 0xFF4B:
                 return PPU->readWX();  // WX
             case 0xFF50:
-                return IO_REGISTERS[index - 0xFF00];  // TODO: Boot ROM mapping control
-        }                                             // TODO: Boot ROM Mapping
-    }
+                return 0xFF;  // return trash as boot rom control is write only
+        }
+    }                     
     // High RAM
-    if (index <= 0xFFFE) {
+    else if (index <= 0xFFFE) {
         return HRAM[index - 0xFF80];
     }
     // Interrupt Enable
-    if (index == 0xFFFF) {
+    else if (index == 0xFFFF) {
         return IE;
     }
-
-    return 0;
+    else {
+        return 0;
+    }
 }
 
 void mmu::writeMem(uint8_t byte, uint16_t index) {
+    if(dmaFlag){
+        if(index >= 0xFF80 && index <= 0xFFFE){ // ONLY Allow HRAM access in DMA
+            HRAM[index] = byte;
+        } else{
+            return; // Don't allow any other accesses
+        }
+    }
     // ROM
-    if (index <= 0x7FFF) {
+    else if (index <= 0x7FFF) {
         // writes to this area are not allowed traditionally, instead used as writes to MBC registers
         mbc->writeROM(byte, index);
         return;
     }
     // Video RAM
-    if (index <= 0x9FFF) {
+    else if (index <= 0x9FFF) {
         VRAM[index - 0x8000] = byte;
         return;
     }
     // External (MBC) RAM
-    if (index <= 0xBFFF) {
+    else if (index <= 0xBFFF) {
         mbc->writeRAM(byte, index);
+        return;
     }
     // Work RAM
-    if (index <= 0xDFFF) {
+    else if (index <= 0xDFFF) {
         WRAM[index - 0xC000] = byte;
         return;
     }
     // Echo RAM
-    if (index <= 0xFDFF) {
+    else if (index <= 0xFDFF) {
         WRAM[index - 0xE000] = byte; 
         return;
     }
     // Object Attribute Memory  
-    if (index <= 0xFE9F) {
+    else if (index <= 0xFE9F) {
         OAM[index - 0xFE00] = byte;
         return;
     }
     // Unused Memory
-    if (index <= 0xFEFF) {
+    else if (index <= 0xFEFF) {
         return;
     }
     // I/O Registers
-    if (index <= 0xFF7F) {
+    else if (index <= 0xFF7F) {
         switch (index) {  
             // TODO: Joypad input
 
@@ -189,7 +208,7 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
                 break;
 
             case 0xFF0F:
-                IO_REGISTERS[index - 0xFF00] = byte;  // Interrupt Flag
+                IF = byte;  // Interrupt Flag
                 break;
 
             // Audio stubbed (0xFF10-0xFF3F)
@@ -230,22 +249,19 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
             case 0xFF4B:
                 PPU->writeWX(byte);  // WX
                 break;
-
-                // TODO: Boot RAM Mapping control
-
-            default:
-                IO_REGISTERS[index - 0xFF00] = byte;
+            case 0xFF50:
+                bootROMEnable = false;
                 break;
         }
         return;
     } 
     // High RAM
-    if (index <= 0xFFFE) {
+    else if (index <= 0xFFFE) {
         HRAM[index - 0xFF80] = byte;
         return;
     }
     // Interrupt Enable 
-    if (index == 0xFFFF) {
+    else if (index == 0xFFFF) {
         IE = byte & 0x1F;  // mask out unused bytes
         return;
     }
@@ -418,7 +434,7 @@ uint8_t MBC2::readRAM(uint16_t addr) {
     if (ram_enable) {
         if ((addr >= 0xA000) && (addr <= 0xA1FF)) {
             sram_address = addr - 0xA000;
-        } else {  // Echo behavior
+        } else {  // behavior
             sram_address = (addr - 0xA000) % 512;
         }
     } else {
@@ -465,7 +481,7 @@ uint8_t MBC3::readROM(uint16_t addr) {
     if (addr <= 0x3FFF) {
         rom_address = addr;
     } else {
-        rom_address = (rom_bank * 0x4000) - 0x4000;
+        rom_address = (rom_bank * 0x4000) + (addr - 0x4000);
     }
     return ROM.at(rom_address);
 }
@@ -677,11 +693,12 @@ void mmu::linkTIMER(timer* timer_) { TIMER = timer_; }
 
 void mmu::linkPPU(ppu* ppu_) { PPU = ppu_; }
 
-void mmu::startDMA(uint8_t byte) {
-    uint8_t data;
-    uint8_t source = (byte << 8) | 0x00;
-    for (int i = 0; i < 160; i++) {
-        data = readMem(source + i);
-        writeMem(data, (0xFE00 + i));
-    }
+// DMA Action
+void mmu::setDMAFlag(){
+    dmaFlag = true;
 }
+
+void mmu::clearDMAFlag(){
+    dmaFlag = false;
+}
+

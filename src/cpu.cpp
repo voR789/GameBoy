@@ -3836,11 +3836,11 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
 // Game loop
 int cpu::step() {
     cycles = 0;
-
+    /*
     if(stop){
         // TODO: add joystick wake up
         return 0;
-    }
+    }*/
     // Halt Logic
     if (halt) {
         if (MMU.readMem(0xFFFF) & MMU.readMem(0xFF0F)) {

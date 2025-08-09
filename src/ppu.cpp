@@ -59,7 +59,5 @@ uint8_t ppu::readLY(){
 }
 
 void ppu::writeDMA(uint8_t byte){
-    // TODO: finish cycle accuracy
-    MMU.startDMA(byte);
-    TIMER.tick();
+    
 }

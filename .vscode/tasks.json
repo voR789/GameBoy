@@ -8,6 +8,8 @@
       "args": [
         "-std=c++17",
         "-g",
+        "-fsanitize=address",
+        "-O1",
         "src/cpu.cpp",
         "src/emulator.cpp",
         "src/mmu.cpp",

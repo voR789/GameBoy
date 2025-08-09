@@ -22,10 +22,12 @@ class mmu{
         // Static Memory Map
         uint8_t VRAM[8192];
         uint8_t WRAM[8192];
-        uint8_t ECHO_RAM[7680]; // Mirrors WRAM
         uint8_t OAM[160];
-        uint8_t IO_REGISTERS[128]; // TODO: Next to eliminate
-        uint8_t HRAM[127];
+        uint8_t HRAM[128];
+
+        // WR Flags
+        bool bootROMEnable;
+        bool dmaFlag;
 
         // Interrupt Flags
         uint8_t IF;
@@ -45,7 +47,7 @@ class mmu{
         bool dmaTransfer;
     public:
         mmu();
-        void clearMem();
+        void reset();
         uint8_t readMem(uint16_t index);
         void writeMem(uint8_t byte, uint16_t address);       
         void loadGame(const std::string& filename);
@@ -58,7 +60,11 @@ class mmu{
 
         // PPU mutual connection
         void linkPPU(ppu* ppu_);
-        void startDMA(uint8_t byte);
+
+        // DMA Action
+        void setDMAFlag();
+        void clearDMAFlag();
+
 };
 
 #endif

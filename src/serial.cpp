@@ -23,6 +23,7 @@ void serial::writeSC(uint8_t byte){
     if(byte & 0x80){
         std::cout << "" << static_cast<char>(SB);
         std::cout.flush();
+        //std::cin.get();
         // "Clear bit 7" and trigger Serial Interrupt
         SC = (byte & ~0x80);
         setInterrupt();

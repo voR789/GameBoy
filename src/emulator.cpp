@@ -3,16 +3,18 @@
 #include "cpu.h"
 #include "mmu.h"
 #include "ppu.h"
-#include "timer.h"
 #include "serial.h"
+#include "timer.h"
+#include "dma.h"
 
 int main() {
     // TODO: Verify power on starting vals when done, add stopped logic
-    mmu   MMU;
+    mmu    MMU;
     serial SERIAL(MMU);
-    timer TIMER(MMU);
-    ppu   PPU(MMU, TIMER);
-    cpu   CPU(MMU, PPU, TIMER);
+    timer  TIMER(MMU);
+    ppu    PPU(MMU, TIMER);
+    dma    DMA(MMU, PPU);
+    cpu    CPU(MMU, PPU, TIMER);
     // MMU.loadGame("tests/01-special.gb"); // - passed
     // MMU.loadGame("tests/02-interrupts.gb"); // - passed
     // MMU.loadGame("tests/03-op sp,hl.gb"); // - passed
@@ -27,15 +29,18 @@ int main() {
 
     MMU.loadGame("tests/cpu_instrs.gb");  // - passed!
     // MMU.loadGame("tests/instr_timing.gb"); // passed!
-    // MMU.loadGame("tests/halt_bug.gb"); // - do ppu first
-    // MMU.loadGame("tests/interrupt_time.gb"); - do ppu first
+    //  MMU.loadGame("tests/halt_bug.gb"); // - do ppu first
+    //  MMU.loadGame("tests/interrupt_time.gb"); - do ppu first
     int  MCycles;
     bool emulating = true;
     while (emulating) {
         MCycles = CPU.step();
-        for (int i = 0; i < (MCycles * 4); i++) {
+        for (int i = 0; i < MCycles; i++) {
+            DMA.tick();
             TIMER.tick();
-            // TODO: PPU.tick();
+            TIMER.tick();
+            TIMER.tick();
+            TIMER.tick();
         }
     }
 

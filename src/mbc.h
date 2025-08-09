@@ -1,3 +1,5 @@
+#ifndef MBC_H
+#define MBC_H
 #include <vector>
 #include <cstdint>
 #include <chrono>
@@ -111,3 +113,4 @@ class noMBC : public MBC {
         void writeRAM(uint8_t byte, uint16_t addr) override;
         void reset() override;  
 };
+#endif
