@@ -12,8 +12,8 @@ int main() {
     mmu    MMU;
     serial SERIAL(MMU);
     timer  TIMER(MMU);
-    ppu    PPU(MMU, TIMER);
-    dma    DMA(MMU, PPU);
+    dma    DMA(MMU);
+    ppu    PPU(MMU, TIMER, DMA);
     cpu    CPU(MMU, PPU, TIMER);
     // MMU.loadGame("tests/01-special.gb"); // - passed
     // MMU.loadGame("tests/02-interrupts.gb"); // - passed

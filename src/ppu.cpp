@@ -1,7 +1,8 @@
 #include "ppu.h"
 #include "mmu.h"
+#include "dma.h"
 
-ppu::ppu(mmu& mmu_ref, timer& timer_ref) : MMU(mmu_ref), TIMER(timer_ref){
+ppu::ppu(mmu& mmu_ref, timer& timer_ref, dma& dma_ref) : MMU(mmu_ref), TIMER(timer_ref), DMA(dma_ref){
     MMU.linkPPU(this);
     LCDC = 0x91;  // Power-on default 
     STAT = 0x85;  // Default status register value
@@ -9,7 +10,7 @@ ppu::ppu(mmu& mmu_ref, timer& timer_ref) : MMU(mmu_ref), TIMER(timer_ref){
     SCX  = 0x00;
     LY   = 0x00;  // Always starts at 0
     LYC  = 0x00;
-    DMA  = 0x00;
+    DMA_reg  = 0x00;
     BGP  = 0xFC;  // Default BG palette (often 0xFC or 0xE4)
     OBP0 = 0xFF;  // Default sprite palette 0
     OBP1 = 0xFF;  // Default sprite palette 1
@@ -59,5 +60,5 @@ uint8_t ppu::readLY(){
 }
 
 void ppu::writeDMA(uint8_t byte){
-    
+    DMA.startDMA(byte);
 }

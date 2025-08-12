@@ -1,10 +1,10 @@
 #include "dma.h"
 #include "mmu.h"
-#include "ppu.h"
 #include <cstdint>
+#include <iostream>
 
-dma::dma(mmu& mmu_ref, ppu& ppu_ref)
-    : MMU(mmu_ref), PPU(ppu_ref), start_addr(0x0000), index(-1) {}
+dma::dma(mmu& mmu_ref)
+    : MMU(mmu_ref), start_addr(0x0000), index(-1) {}
 
 void dma::startDMA(uint8_t byte){
     start_addr = byte << 8;

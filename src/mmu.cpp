@@ -25,6 +25,7 @@ mmu::mmu() : PPU(nullptr), TIMER(nullptr), SERIAL(nullptr) {
 }
 
 void mmu::reset() {
+    loadBootROM();
     memset(VRAM, 0, sizeof(VRAM));
     memset(WRAM, 0, sizeof(WRAM));
     memset(OAM, 0, sizeof(OAM));
@@ -32,18 +33,28 @@ void mmu::reset() {
     IE = 0x0;
     IF = 0xE1;
     bootROMEnable = true;
+    dmaFlag = false;
 }
 
 uint8_t mmu::readMem(uint16_t index) {
     if(dmaFlag){
         if(index >= 0xFF80 && index <= 0xFFFE){ // ONLY Allow HRAM access in DMA
-            return HRAM[index];
+            return HRAM[index - 0xFF80];
         } else{
             return 0xFF; // Don't allow any other accesses
         }
     }
     // ROM
     else if (index <= 0x7FFF) {
+        if(bootROMEnable){
+            if(index <= 0x100){
+                return readBootROM(index);
+            } 
+            else if(index <= 0x133){
+                // Boot ROM uses header for logo
+                return mbc->readROM(index);
+            }
+        }
         return mbc->readROM(index);
     }
     // Video RAM
@@ -135,12 +146,13 @@ uint8_t mmu::readMem(uint16_t index) {
     else {
         return 0;
     }
+    return 0;
 }
 
 void mmu::writeMem(uint8_t byte, uint16_t index) {
     if(dmaFlag){
         if(index >= 0xFF80 && index <= 0xFFFE){ // ONLY Allow HRAM access in DMA
-            HRAM[index] = byte;
+            HRAM[index - 0xFF80] = byte;
         } else{
             return; // Don't allow any other accesses
         }
@@ -148,6 +160,9 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
     // ROM
     else if (index <= 0x7FFF) {
         // writes to this area are not allowed traditionally, instead used as writes to MBC registers
+        if(bootROMEnable){
+            return;
+        }
         mbc->writeROM(byte, index);
         return;
     }
@@ -249,9 +264,12 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
             case 0xFF4B:
                 PPU->writeWX(byte);  // WX
                 break;
-            case 0xFF50:
+            case 0xFF50:{
+                std::cerr << "Escaped boot ROM";
+                std::cin.get();
                 bootROMEnable = false;
                 break;
+            }
         }
         return;
     } 
@@ -702,3 +720,15 @@ void mmu::clearDMAFlag(){
     dmaFlag = false;
 }
 
+// Boot ROM 
+uint8_t mmu::readBootROM(uint16_t index){
+    return bootROM.at(index);
+}
+
+void mmu::loadBootROM(){
+    std::ifstream rom("boot_rom/dmg_boot.bin", std::ios::binary);
+    if (!rom) {
+        throw std::runtime_error("Failed to open Boot ROM");
+    }
+    bootROM = std::vector<uint8_t>((std::istreambuf_iterator<char>(rom)), {});  // Boot ROM vector
+}

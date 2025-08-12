@@ -23,7 +23,7 @@ class mmu{
         uint8_t VRAM[8192];
         uint8_t WRAM[8192];
         uint8_t OAM[160];
-        uint8_t HRAM[128];
+        uint8_t HRAM[127];
 
         // WR Flags
         bool bootROMEnable;
@@ -45,6 +45,10 @@ class mmu{
         // PPU Pointer
         ppu* PPU;
         bool dmaTransfer;
+
+        // Boot ROM
+        std::vector<uint8_t> bootROM;
+
     public:
         mmu();
         void reset();
@@ -65,6 +69,9 @@ class mmu{
         void setDMAFlag();
         void clearDMAFlag();
 
+        // Boot ROM
+        uint8_t readBootROM(uint16_t index);
+        void loadBootROM();
 };
 
 #endif

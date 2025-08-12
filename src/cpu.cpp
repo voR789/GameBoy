@@ -3820,17 +3820,17 @@ cpu::cpu(mmu &MMUref, ppu &PPUref, timer &TIMERref) : MMU(MMUref), PPU(PPUref), 
     halt        = false;
     haltBugFlag = false;
 
-    // test rom fake boot rom
-    registers[0] = 0x01B0;
-    registers[1] = 0x0013;
-    registers[2] = 0x00D8;
-    registers[3] = 0x014D;
-    sp           = 0xFFFE;
-    pc           = 0x0100;
-    MMU.writeMem(0x91, 0xFF40);  // LCDC
-    MMU.writeMem(0x85, 0xFF41);  // STAT
-    MMU.writeMem(0x00, 0xFF44);  // LY
-    MMU.writeMem(0xFC, 0xFF47);  // BGP
+    // // test rom fake boot rom
+    // registers[0] = 0x01B0;
+    // registers[1] = 0x0013;
+    // registers[2] = 0x00D8;
+    // registers[3] = 0x014D;
+    // sp           = 0xFFFE;
+    // pc           = 0x0100;
+    // MMU.writeMem(0x91, 0xFF40);  // LCDC
+    // MMU.writeMem(0x85, 0xFF41);  // STAT
+    // MMU.writeMem(0x00, 0xFF44);  // LY
+    // MMU.writeMem(0xFC, 0xFF47);  // BGP
 }
 
 // Game loop
@@ -3865,6 +3865,8 @@ int cpu::step() {
         pc--;
         haltBugFlag = false;
     }
+    std::cout << "pc: 0x" << std::hex << (int)(pc - 1) << " opcode: 0x" << (int)opcode << " imm8: " << (int)MMU.readMem(pc) << " Z: " << (int)getFlag('Z') << '\n'; 
+    
 
     cycles += executeOpcode();
 

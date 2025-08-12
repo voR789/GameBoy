@@ -17,6 +17,7 @@
         "src/timer.cpp",
         "src/renderer.cpp",
         "src/serial.cpp",
+        "src/dma.cpp",
         "-o",
         "bin/emulator"
       ],
