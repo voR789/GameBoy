@@ -20,9 +20,7 @@ class mmu{
         uint8_t romSize;
         uint8_t ramSize;
         // Static Memory Map
-        uint8_t VRAM[8192];
         uint8_t WRAM[8192];
-        uint8_t OAM[160];
         uint8_t HRAM[127];
 
         // WR Flags
@@ -68,6 +66,7 @@ class mmu{
         // DMA Action
         void setDMAFlag();
         void clearDMAFlag();
+        void writeOAM(uint8_t byte, uint16_t addr);
 
         // Boot ROM
         uint8_t readBootROM(uint16_t index);

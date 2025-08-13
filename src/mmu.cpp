@@ -26,9 +26,7 @@ mmu::mmu() : PPU(nullptr), TIMER(nullptr), SERIAL(nullptr) {
 
 void mmu::reset() {
     loadBootROM();
-    memset(VRAM, 0, sizeof(VRAM));
     memset(WRAM, 0, sizeof(WRAM));
-    memset(OAM, 0, sizeof(OAM));
     memset(HRAM, 0, sizeof(HRAM));
     IE = 0x0;
     IF = 0xE1;
@@ -59,7 +57,7 @@ uint8_t mmu::readMem(uint16_t index) {
     }
     // Video RAM
     else if (index <= 0x9FFF) {
-        return VRAM[index - 0x8000];  
+        return PPU->readVRAM(index);  
     }
     // External (MBC) RAM
     else if (index <= 0xBFFF) {
@@ -75,7 +73,7 @@ uint8_t mmu::readMem(uint16_t index) {
     }
     // Object Attribute Memory
     else if (index <= 0xFE9F) {
-        return OAM[index - 0xFE00]; 
+        return PPU->readOAM(index);
     }
     // Unused Memory Map
     else if (index <= 0xFEFF) {
@@ -168,7 +166,7 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
     }
     // Video RAM
     else if (index <= 0x9FFF) {
-        VRAM[index - 0x8000] = byte;
+        PPU->writeVRAM(byte, index);
         return;
     }
     // External (MBC) RAM
@@ -188,7 +186,7 @@ void mmu::writeMem(uint8_t byte, uint16_t index) {
     }
     // Object Attribute Memory  
     else if (index <= 0xFE9F) {
-        OAM[index - 0xFE00] = byte;
+        PPU->writeOAM(byte, index);
         return;
     }
     // Unused Memory
@@ -718,6 +716,10 @@ void mmu::setDMAFlag(){
 
 void mmu::clearDMAFlag(){
     dmaFlag = false;
+}
+
+void mmu::writeOAM(uint8_t byte, uint16_t addr){
+    PPU->dmaWriteOAM(byte, addr);
 }
 
 // Boot ROM 

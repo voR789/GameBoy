@@ -3865,7 +3865,7 @@ int cpu::step() {
         pc--;
         haltBugFlag = false;
     }
-    std::cout << "pc: 0x" << std::hex << (int)(pc - 1) << " opcode: 0x" << (int)opcode << " imm8: " << (int)MMU.readMem(pc) << " Z: " << (int)getFlag('Z') << '\n'; 
+    std::cout << "pc: 0x" << std::hex << (int)(pc - 1) << " opcode: 0x" << (int)opcode << " imm8: " << (int)MMU.readMem(pc) << " LY: 0x" << (int)MMU.readMem(0xFF44) << '\n'; 
     
 
     cycles += executeOpcode();

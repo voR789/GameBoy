@@ -1,21 +1,61 @@
 #include "ppu.h"
 #include "mmu.h"
 #include "dma.h"
+#include <cstdint>
+#include <iostream>
+
 
 ppu::ppu(mmu& mmu_ref, timer& timer_ref, dma& dma_ref) : MMU(mmu_ref), TIMER(timer_ref), DMA(dma_ref){
     MMU.linkPPU(this);
+    render_mode = mode::HBlank_mode;
     LCDC = 0x91;  // Power-on default 
     STAT = 0x85;  // Default status register value
-    SCY  = 0x00;
-    SCX  = 0x00;
+    SCY  = 0x00;  
+    SCX  = 0x00;  
     LY   = 0x00;  // Always starts at 0
-    LYC  = 0x00;
-    DMA_reg  = 0x00;
+    LYC  = 0x00;  
+    DMA_reg  = 0x00; 
     BGP  = 0xFC;  // Default BG palette (often 0xFC or 0xE4)
     OBP0 = 0xFF;  // Default sprite palette 0
     OBP1 = 0xFF;  // Default sprite palette 1
     WY   = 0x00;  // Window Y position offscreen at start
     WX   = 0x00;  // Window X position offscreen at start
+    x = 0;
+    g = false;
+}
+
+uint8_t ppu::readVRAM(uint16_t addr){
+    if(render_mode == mode::Transfer_mode){
+        return 0xFF; // Inaccessible in these modes
+    }
+    return VRAM[addr - 0x8000];
+}
+
+void ppu::writeVRAM(uint8_t byte, uint16_t addr){
+    if(render_mode == mode::Transfer_mode){
+        return; // Inaccessible in these modes
+    }
+    VRAM[addr - 0x8000] = byte;
+}
+
+uint8_t ppu::readOAM(uint16_t addr){
+    if(render_mode == mode::Transfer_mode or render_mode == mode::OAM_mode){
+        return 0xFF; // Inaccessible in these modes
+    }
+    return OAM[addr - 0xFE00];
+}
+
+
+void ppu::writeOAM(uint8_t byte, uint16_t addr){
+    if(render_mode == mode::Transfer_mode or render_mode == mode::OAM_mode){
+        return; // Inaccessible in these modes
+    }
+    OAM[addr - 0xFE00] = byte;
+}
+
+void ppu::dmaWriteOAM(uint8_t byte, uint16_t addr){
+    // Ignore mode restrictions
+    OAM[addr - 0xFE00] = byte;
 }
 
 /* LCDC Bitmap: 
@@ -56,9 +96,25 @@ void ppu::writeSTAT(uint8_t byte){
 } 
 
 uint8_t ppu::readLY(){
-    return 0;
+    return LY;
 }
 
 void ppu::writeDMA(uint8_t byte){
     DMA.startDMA(byte);
 }
+
+
+void ppu::tick(){
+    if (!(LCDC & 0x80)) {
+    // Bit 7 of LCDC is off: PPU is off
+    return;
+    // todo:
+    /*
+    - pixel struct
+    - pixel fetcher
+    - 2 fifo 
+    - 
+    */
+}
+}
+

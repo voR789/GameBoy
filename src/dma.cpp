@@ -17,7 +17,7 @@ void dma::tick(){
     if(index >= 0){
         uint16_t addr = start_addr + index;
         uint8_t data = MMU.readMem(addr);
-        MMU.writeMem(data, 0xFE00 + index);
+        MMU.writeOAM(data, 0xFE00 + index);
         index++;
     }
 

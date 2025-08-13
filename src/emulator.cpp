@@ -34,13 +34,13 @@ int main() {
     int  MCycles;
     bool emulating = true;
     while (emulating) {
-        MCycles = CPU.step();
+        MCycles = CPU.step(); // Base scheduling unit
         for (int i = 0; i < MCycles; i++) {
-            DMA.tick();
-            TIMER.tick();
-            TIMER.tick();
-            TIMER.tick();
-            TIMER.tick();
+            DMA.tick(); // One byte every 4 T-Cycles, or one per M cycle
+            for(int j = 0; j < 4; j++){
+                TIMER.tick();
+                PPU.tick();
+            }
         }
     }
 
